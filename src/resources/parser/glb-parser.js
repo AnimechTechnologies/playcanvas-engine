@@ -1368,11 +1368,22 @@ Object.assign(pc, function () {
         return animTracks;
     };
 
-    var createNodes = function (gltf) {
+    var createNodes = function (gltf, extensions) {
         if (!gltf.hasOwnProperty('nodes') || gltf.nodes.length === 0) {
             return [];
         }
-        var nodes = gltf.nodes.map(createNode);
+
+        var nodes = gltf.nodes.map(function (nodeData, nodeIndex) {
+            var node = createNode(nodeData, nodeIndex);
+            var nodeWithExtensions = Object.keys(nodeData.extensions || {})
+                .filter(function (id) {
+                    return extensions.hasOwnProperty(id);
+                })
+                .reduce(function (prevNode, id) {
+                    return extensions[id](prevNode, nodeData, gltf);
+                }, node);
+            return nodeWithExtensions;
+        });
 
         // build node hierarchy
         for (var i = 0; i < gltf.nodes.length; ++i) {
@@ -1439,9 +1450,33 @@ Object.assign(pc, function () {
         return models;
     };
 
+    var getExtensionHandlers = function () {
+        return {
+            nodes: {
+                'EPIC_reflection_probes': function (node, nodeData, gltf) {
+                    console.log('EPIC_reflection_probes', node, nodeData, gltf);
+                    // node.setLocalScale(1, 2, 3);
+                    return node;
+                }
+            },
+            scenes: undefined,
+            textures: undefined,
+            materials: {
+                'EPIC_materials_lightmap': function (material) {
+                    return material;
+                }
+            },
+            meshes: undefined,
+            skins: undefined,
+            animations: undefined
+        };
+    };
+
     // create engine resources from the downloaded GLB data
     var createResources = function (device, gltf, buffers, images, defaultMaterial, callback) {
-        var nodes = createNodes(gltf);
+        var extensions = getExtensionHandlers();
+
+        var nodes = createNodes(gltf, extensions.nodes);
         var nodeComponents = nodes.map(function () {
             return {
                 model: null,
