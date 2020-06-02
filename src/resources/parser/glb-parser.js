@@ -1299,48 +1299,64 @@ Object.assign(pc, function () {
         return model;
     };
 
-    var createSkins = function (device, gltf, nodes, buffers) {
+    var createSkins = function (device, gltf, nodes, buffers, applyExtensions) {
         if (!gltf.hasOwnProperty('skins') || gltf.skins.length === 0) {
             return [];
         }
         return gltf.skins.map(function (skinData) {
-            return createSkin(device, skinData, gltf.accessors, gltf.bufferViews, nodes, buffers);
+            var skin = createSkin(device, skinData, gltf.accessors, gltf.bufferViews, nodes, buffers);
+            if (skinData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(skin, skinData, gltf);
+            }
+            return skin;
         });
 
     };
 
-    var createMeshGroups = function (device, gltf, buffers, callback) {
+    var createMeshGroups = function (device, gltf, buffers, applyExtensions, callback) {
         if (!gltf.hasOwnProperty('meshes') || gltf.meshes.length === 0 ||
             !gltf.hasOwnProperty('accessors') || gltf.accessors.length === 0 ||
             !gltf.hasOwnProperty('bufferViews') || gltf.bufferViews.length === 0) {
             return [];
         }
         return gltf.meshes.map(function (meshData) {
-            return createMeshGroup(device, meshData, gltf.accessors, gltf.bufferViews, buffers, callback);
+            var meshGroup = createMeshGroup(device, meshData, gltf.accessors, gltf.bufferViews, buffers, callback);
+            if (meshData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(meshGroup, meshData, gltf);
+            }
+            return meshGroup;
         });
 
     };
 
-    var createMaterials = function (gltf, textures) {
+    var createMaterials = function (gltf, textures, applyExtensions) {
         if (!gltf.hasOwnProperty('materials') || gltf.materials.length === 0) {
             return [];
         }
         return gltf.materials.map(function (materialData) {
-            return createMaterial(materialData, textures);
+            var material = createMaterial(materialData, textures);
+            if (materialData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(material, materialData, gltf);
+            }
+            return material;
         });
 
     };
 
-    var createTextures = function (device, gltf, images) {
+    var createTextures = function (device, gltf, images, applyExtensions) {
         if (!gltf.hasOwnProperty('textures') || gltf.textures.length === 0) {
             return [];
         }
         return gltf.textures.map(function (textureData) {
-            return createTexture(device, textureData, gltf.samplers, images);
+            var texture = createTexture(device, textureData, gltf.samplers, images);
+            if (textureData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(texture, textureData, gltf);
+            }
+            return texture;
         });
     };
 
-    var createAnimations = function (gltf, nodes, nodeComponents, buffers) {
+    var createAnimations = function (gltf, nodes, nodeComponents, buffers, applyExtensions) {
         if (!gltf.hasOwnProperty('animations') || gltf.animations.length === 0) {
             return [];
         }
@@ -1349,7 +1365,12 @@ Object.assign(pc, function () {
 
         gltf.animations.forEach(function (animationData, animationIndex) {
             var animation = createAnimation(animationData, animationIndex, gltf.accessors, gltf.bufferViews, gltf.nodes, nodes, buffers);
-            animTracks.push(animation.track);
+
+            var animTrack = animation.track;
+            if (animationData.hasOwnProperty("extensions") && applyExtensions) {
+                animTrack = applyExtensions(animTrack, animationData, gltf);
+            }
+            animTracks.push(animTrack);
 
             // animation components should be added to all root nodes targeted by an
             // animation track since the locator path in animation curves is relative
@@ -1368,21 +1389,17 @@ Object.assign(pc, function () {
         return animTracks;
     };
 
-    var createNodes = function (gltf, extensions) {
+    var createNodes = function (gltf, applyExtensions) {
         if (!gltf.hasOwnProperty('nodes') || gltf.nodes.length === 0) {
             return [];
         }
 
         var nodes = gltf.nodes.map(function (nodeData, nodeIndex) {
             var node = createNode(nodeData, nodeIndex);
-            var nodeWithExtensions = Object.keys(nodeData.extensions || {})
-                .filter(function (id) {
-                    return extensions.hasOwnProperty(id);
-                })
-                .reduce(function (prevNode, id) {
-                    return extensions[id](prevNode, nodeData, gltf);
-                }, node);
-            return nodeWithExtensions;
+            if (nodeData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(node, nodeData, gltf);
+            }
+            return node;
         });
 
         // build node hierarchy
@@ -1402,13 +1419,17 @@ Object.assign(pc, function () {
         return nodes;
     };
 
-    var createScenes = function (gltf, nodes) {
+    var createScenes = function (gltf, nodes, applyExtensions) {
         if (!gltf.hasOwnProperty('scenes') || gltf.scenes.length === 0) {
             return [];
         }
 
         return gltf.scenes.map(function (sceneData, sceneIndex) {
-            return createScene(sceneData, sceneIndex, nodes);
+            var scene = createScene(sceneData, sceneIndex, nodes);
+            if (sceneData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(scene, sceneData, gltf);
+            }
+            return scene;
         });
     };
 
@@ -1452,23 +1473,33 @@ Object.assign(pc, function () {
 
     var getExtensionHandlers = function () {
         return {
-            nodes: {
-                'EPIC_reflection_probes': function (node, nodeData, gltf) {
-                    console.log('EPIC_reflection_probes', node, nodeData, gltf);
-                    // node.setLocalScale(1, 2, 3);
-                    return node;
-                }
+            nodes: function (node, nodeData, gltf) {
+                console.log('NODE_EXTENSIONS', node.name, nodeData.extensions);
+                return node;
             },
-            scenes: undefined,
-            textures: undefined,
-            materials: {
-                'EPIC_materials_lightmap': function (material) {
-                    return material;
-                }
+            scenes: function (scene) {
+                return scene;
             },
-            meshes: undefined,
-            skins: undefined,
-            animations: undefined
+            textures: function (texture, textureData, gltf) {
+                var extensions = textureData.extensions;
+                console.log('TEXTURE_EXTENSIONS', texture, textureData.extensions);
+                if (extensions.hasOwnProperty("EPIC_texture_cubemap")) {
+                    return new pc.Texture(texture.device);
+                }
+                return texture;
+            },
+            materials: function (material) {
+                return material;
+            },
+            meshes: function (mesh) {
+                return mesh;
+            },
+            skins: function (skin) {
+                return skin;
+            },
+            animations: function (animation) {
+                return animation;
+            }
         };
     };
 
@@ -1484,14 +1515,14 @@ Object.assign(pc, function () {
             };
         });
 
-        var scenes = createScenes(gltf, nodes);
+        var scenes = createScenes(gltf, nodes, extensions.scenes);
         var scene = getDefaultScene(gltf, scenes);
-        var textures = createTextures(device, gltf, images);
-        var materials = createMaterials(gltf, textures);
-        var meshGroups = createMeshGroups(device, gltf, buffers, callback);
-        var skins = createSkins(device, gltf, nodes, buffers);
+        var textures = createTextures(device, gltf, images, extensions.textures);
+        var materials = createMaterials(gltf, textures, extensions.materials);
+        var meshGroups = createMeshGroups(device, gltf, buffers, extensions.meshes, callback);
+        var skins = createSkins(device, gltf, nodes, buffers, extensions.skins);
         var models = createModels(gltf, nodes, nodeComponents, meshGroups, skins, materials, defaultMaterial);
-        var animations = createAnimations(gltf, nodes, nodeComponents, buffers);
+        var animations = createAnimations(gltf, nodes, nodeComponents, buffers, extensions.animations);
 
         callback(null, {
             'nodes': nodes,
