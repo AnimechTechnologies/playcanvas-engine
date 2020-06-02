@@ -2,111 +2,132 @@ Object.assign(pc, function () {
 
     var GLB_EXTENSION_TYPES = ["node", "scene", "texture", "material", "mesh", "skin", "animation"];
 
-    var GlbExtensionRegistryItem = function (type, name, callback) {
-        this.type = type;
-        this.name = name;
-        this.callback = callback;
-    };
-
-    var GlbExtensionRegistry = function () {
-        this._extensions = GLB_EXTENSION_TYPES.reduce(function (typeObject, type) {
-            typeObject[type] = {
-                list: [],
-                index: {}
-            };
-            return typeObject;
+    var getEmptyExtensionIndex = function () {
+        return GLB_EXTENSION_TYPES.reduce(function (extensions, type) {
+            extensions[type] = {};
+            return extensions;
         }, {});
     };
 
+    var GlbExtensionRegistry = function () {
+        this._extensionIndex = getEmptyExtensionIndex();
+    };
+
     GlbExtensionRegistry.prototype.destroy = function () {
+        this._extensionIndex = null;
     };
 
     GlbExtensionRegistry.prototype.add = function (type, name, callback) {
-        if (!this._extensions.hasOwnProperty(type)) {
+        if (!this._extensionIndex.hasOwnProperty(type)) {
             // #ifdef DEBUG
             console.warn('pc.GlbExtensionRegistry: trying to add extension of invalid type: ' + type);
             // #endif
             return false;
         }
-        var extensionType = this._extensions[type];
-        if (extensionType.index.hasOwnProperty(name)) {
+
+        var extensions = this._extensionIndex[type];
+        if (extensions.hasOwnProperty(name)) {
             // #ifdef DEBUG
             console.warn('pc.GlbExtensionRegistry: trying to add more than one extension named: ' + name);
             // #endif
             return false;
         }
 
-        var item = new pc.GlbExtensionRegistryItem(type, name, callback);
-        var itemIndex = extensionType.list.push(item) - 1;
-        extensionType.index[item.name] = itemIndex;
+        extensions[name] = callback;
 
         return true;
     };
 
     GlbExtensionRegistry.prototype.remove = function (type, name) {
+        if (!this._extensionIndex.hasOwnProperty(type)) {
+            // #ifdef DEBUG
+            console.warn('pc.GlbExtensionRegistry: trying to remove extension of invalid type: ' + type);
+            // #endif
+            return;
+        }
+
+        var extensions = this._extensionIndex[type];
+        if (!extensions.hasOwnProperty(name)) {
+            return;
+        }
+
+        delete extensions[name];
     };
 
     GlbExtensionRegistry.prototype.removeAll = function (type) {
-    };
-
-    GlbExtensionRegistry.prototype.list = function (type) {
-        if (!this._extensions.hasOwnProperty(type)) {
-            // #ifdef DEBUG
-            console.warn('pc.GlbExtensionRegistry: trying to list extensions of invalid type: ' + type);
-            // #endif
-            return [];
+        if (this._type === undefined) {
+            this._extensionIndex = getEmptyExtensionIndex();
+            return;
         }
-        return this._extensions[type].list;
+
+        if (!this._extensionIndex.hasOwnProperty(type)) {
+            // #ifdef DEBUG
+            console.warn('pc.GlbExtensionRegistry: trying to remove extensions of invalid type: ' + type);
+            // #endif
+            return;
+        }
+
+        this._extensionIndex[type] = {};
     };
 
     GlbExtensionRegistry.prototype.find = function (type, name) {
-        if (!this._extensions.hasOwnProperty(type)) {
+        if (!this._extensionIndex.hasOwnProperty(type)) {
             // #ifdef DEBUG
             console.warn('pc.GlbExtensionRegistry: trying to find extension of invalid type: ' + type);
             // #endif
             return null;
         }
-        var extensionType = this._extensions[type];
-        if (!extensionType.index.hasOwnProperty(name)) {
+
+        var extensions = this._extensionIndex[type];
+        if (!extensions.hasOwnProperty(name)) {
             return null;
         }
-        return extensionType.list[extensionType.index[name]];
+
+        return extensions[name];
+    };
+
+    GlbExtensionRegistry.prototype.index = function () {
+        return this._extensionIndex;
     };
 
     GlbExtensionRegistry.prototype.apply = function (type, name, item, itemData, gltf) {
-        if (!this._extensions.hasOwnProperty(type)) {
+        if (!this._extensionIndex.hasOwnProperty(type)) {
             // #ifdef DEBUG
             console.warn('pc.GlbExtensionRegistry: trying to apply extension of invalid type: ' + type);
             // #endif
-            return;
+            return item;
         }
-        // TODO
+
+        var extension = this._extensionIndex[type][name];
+        if (!extension) {
+            return item;
+        }
+
+        return extension(item, itemData, gltf);
     };
 
     GlbExtensionRegistry.prototype.applyAll = function (type, item, itemData, gltf) {
-        if (!this._extensions.hasOwnProperty(type)) {
+        if (!this._extensionIndex.hasOwnProperty(type)) {
             // #ifdef DEBUG
             console.warn('pc.GlbExtensionRegistry: trying to apply extensions of invalid type: ' + type);
             // #endif
-            return;
+            return item;
         }
 
-        var extensionList = this._extensions[type].list;
-        var extensionIndex = this._extensions[type].index;
+        var extensions = this._extensionIndex[type];
 
         return Object.keys(itemData.extensions || {})
-            .filter(function (id) {
-                return extensionIndex.hasOwnProperty(id);
+            .filter(function (extensionId) {
+                return extensions.hasOwnProperty(extensionId);
             })
-            .reduce(function (prevItem, id) {
-                var apply = extensionList[extensionIndex[id]].callback;
-                return apply(prevItem, itemData, gltf);
+            .reduce(function (prevItem, extensionId) {
+                var extension = extensions[extensionId];
+                return extension(prevItem, itemData, gltf);
             }, item);
     };
 
     return {
-        GlbExtensionRegistry: GlbExtensionRegistry,
-        GlbExtensionRegistryItem: GlbExtensionRegistryItem
+        GlbExtensionRegistry: GlbExtensionRegistry
     };
 
 }());
