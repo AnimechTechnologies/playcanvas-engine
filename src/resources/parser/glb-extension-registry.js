@@ -171,6 +171,21 @@ Object.assign(pc, function () {
         this._animation.destroy();
     };
 
+    /**
+     * @function
+     * @name  pc.GlbExtensionRegistry#removeAll
+     * @description Remove all extension callbacks from all sub-registries.
+     */
+    GlbExtensionRegistry.prototype.removeAll = function () {
+        this._node.removeAll();
+        this._scene.removeAll();
+        this._texture.removeAll();
+        this._material.removeAll();
+        this._mesh.removeAll();
+        this._skin.removeAll();
+        this._animation.removeAll();
+    };
+
     Object.defineProperties(GlbExtensionRegistry.prototype, {
         /**
          * @readonly
