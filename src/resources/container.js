@@ -13,6 +13,7 @@ Object.assign(pc, function () {
      * @property {pc.Asset[]} textures Texture assets.
      * @property {pc.Asset[]} animations Animation assets.
      * @property {pc.Asset[]} models Model assets.
+     * @property {object} extensions Extension data from the GLB root.
      * @property {pc.AssetRegistry} registry The asset registry.
      */
     var ContainerResource = function (data) {
@@ -23,6 +24,7 @@ Object.assign(pc, function () {
         this.textures = [];
         this.animations = [];
         this.models = [];
+        this.extensions = null;
         this.registry = null;
     };
 
@@ -72,6 +74,7 @@ Object.assign(pc, function () {
                 this.materials = null;
             }
 
+            this.extensions = null;
             this.data = null;
             this.assets = null;
         }
@@ -222,6 +225,7 @@ Object.assign(pc, function () {
             container.textures = textureAssets;
             container.animations = animationAssets;
             container.models = modelAssets;
+            container.extensions = data.extensions;
             container.registry = assets;
         }
     });

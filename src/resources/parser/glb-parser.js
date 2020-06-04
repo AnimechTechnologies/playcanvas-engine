@@ -1498,7 +1498,8 @@ Object.assign(pc, function () {
             'scenes': scenes,
             'scene': scene,
             'textures': textures,
-            'materials': materials
+            'materials': materials,
+            'extensions': gltf.extensions
         });
     };
 
