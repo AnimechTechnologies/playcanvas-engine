@@ -2,6 +2,7 @@
     "source": {
         "include": ["src"]
     },
+    "plugins": ["node_modules/tsd-jsdoc/dist/plugin"],
     "opts": {
         "destination": "build/output",
         "outFile": "playcanvas.d.ts",
