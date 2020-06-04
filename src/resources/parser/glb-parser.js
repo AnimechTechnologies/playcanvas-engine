@@ -1471,9 +1471,15 @@ Object.assign(pc, function () {
         return models;
     };
 
+    var getExtensionsCallback = function (extensionRegistry, type) {
+        return function (item, extensions, gltf) {
+            return extensionRegistry.applyExtensions(type, item, extensions, gltf);
+        };
+    };
+
     // create engine resources from the downloaded GLB data
     var createResources = function (device, gltf, buffers, images, defaultMaterial, extensionRegistry, callback) {
-        var nodes = createNodes(gltf, extensionRegistry.applyNodeExtensions);
+        var nodes = createNodes(gltf, getExtensionsCallback(extensionRegistry, "node"));
         var nodeComponents = nodes.map(function () {
             return {
                 model: null,
@@ -1481,14 +1487,14 @@ Object.assign(pc, function () {
             };
         });
 
-        var scenes = createScenes(gltf, nodes, extensionRegistry.applySceneExtensions);
+        var scenes = createScenes(gltf, nodes, getExtensionsCallback(extensionRegistry, "scene"));
         var scene = getDefaultScene(gltf, scenes);
-        var textures = createTextures(device, gltf, images, extensionRegistry.applyTextureExtensions);
-        var materials = createMaterials(gltf, textures, extensionRegistry.applyMaterialExtensions);
-        var meshGroups = createMeshGroups(device, gltf, buffers, extensionRegistry.applyMeshExtensions, callback);
-        var skins = createSkins(device, gltf, nodes, buffers, extensionRegistry.applySkinExtensions);
+        var textures = createTextures(device, gltf, images, getExtensionsCallback(extensionRegistry, "texture"));
+        var materials = createMaterials(gltf, textures, getExtensionsCallback(extensionRegistry, "material"));
+        var meshGroups = createMeshGroups(device, gltf, buffers, getExtensionsCallback(extensionRegistry, "mesh"), callback);
+        var skins = createSkins(device, gltf, nodes, buffers, getExtensionsCallback(extensionRegistry, "skin"));
         var models = createModels(gltf, nodes, nodeComponents, meshGroups, skins, materials, defaultMaterial);
-        var animations = createAnimations(gltf, nodes, nodeComponents, buffers, extensionRegistry.applyAnimationExtensions);
+        var animations = createAnimations(gltf, nodes, nodeComponents, buffers, getExtensionsCallback(extensionRegistry, "animation"));
 
         callback(null, {
             'nodes': nodes,

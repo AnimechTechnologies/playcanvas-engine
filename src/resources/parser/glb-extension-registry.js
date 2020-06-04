@@ -40,14 +40,8 @@ Object.assign(pc, function () {
         this.removeAll = this.removeAll.bind(this);
         this.find = this.find.bind(this);
         this.index = this.index.bind(this);
+        this.applyExtension = this.applyExtension.bind(this);
         this.applyExtensions = this.applyExtensions.bind(this);
-        this.applyNodeExtensions = this.applyNodeExtensions.bind(this);
-        this.applySceneExtensions = this.applySceneExtensions.bind(this);
-        this.applyTextureExtensions = this.applyTextureExtensions.bind(this);
-        this.applyMaterialExtensions = this.applyMaterialExtensions.bind(this);
-        this.applyMeshExtensions = this.applyMeshExtensions.bind(this);
-        this.applySkinExtensions = this.applySkinExtensions.bind(this);
-        this.applyAnimationExtensions = this.applyAnimationExtensions.bind(this);
     };
 
     /**
@@ -224,97 +218,6 @@ Object.assign(pc, function () {
                 var extensionData = extensionDataByName[extensionId];
                 return extensionCallback(prevItem, extensionData, gltf);
             }, item);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applyNodeExtensions
-     * @description Apply extensions to a pc.Entity spawned from a GLB node object.
-     * @param {pc.Entity} node - The node entity to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the entity, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.Entity} The new or modified node entity.
-     */
-    GlbExtensionRegistry.prototype.applyNodeExtensions = function (node, extensionData, gltf) {
-        return this.applyExtensions("node", node, extensionData, gltf);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applySceneExtensions
-     * @description Apply extensions to a pc.Entity spawned from a GLB scene object.
-     * @param {pc.Entity} scene - The scene entity to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the entity, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.Entity} The new or modified scene entity.
-     */
-    GlbExtensionRegistry.prototype.applySceneExtensions = function (scene, extensionData, gltf) {
-        return this.applyExtensions("scene", scene, extensionData, gltf);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applyTextureExtensions
-     * @description Apply extensions to a pc.Texture spawned from a GLB texture object.
-     * @param {pc.Texture} texture - The texture to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the texture, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.Texture} The new or modified texture.
-     */
-    GlbExtensionRegistry.prototype.applyTextureExtensions = function (texture, extensionData, gltf) {
-        return this.applyExtensions("texture", texture, extensionData, gltf);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applyMaterialExtensions
-     * @description Apply extensions to a pc.Material spawned from a GLB material object.
-     * @param {pc.Material} material - The material to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the material, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.Material} The new or modified material.
-     */
-    GlbExtensionRegistry.prototype.applyMaterialExtensions = function (material, extensionData, gltf) {
-        return this.applyExtensions("material", material, extensionData, gltf);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applyMeshExtensions
-     * @description Apply extensions to a pc.Mesh[] spawned from a GLB mesh object.
-     * @param {pc.Mesh[]} meshes - The meshes to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the meshes, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.Mesh[]} The new or modified meshes.
-     */
-    GlbExtensionRegistry.prototype.applyMeshExtensions = function (meshes, extensionData, gltf) {
-        return this.applyExtensions("mesh", meshes, extensionData, gltf);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applySkinExtensions
-     * @description Apply extensions to a pc.Skin spawned from a GLB skin object.
-     * @param {pc.Skin} skin - The skin to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the skin, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.Skin} The new or modified skin.
-     */
-    GlbExtensionRegistry.prototype.applySkinExtensions = function (skin, extensionData, gltf) {
-        return this.applyExtensions("skin", skin, extensionData, gltf);
-    };
-
-    /**
-     * @function
-     * @name  pc.GlbExtensionRegistry#applyAnimationExtensions
-     * @description Apply extensions to a pc.AnimTrack spawned from a GLB animation object.
-     * @param {pc.AnimTrack} animation - The animation to be modified or replaced.
-     * @param {object} extensionData - The object containing extension data that should be applied to the animation, grouped by extension name.
-     * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-     * @returns {pc.AnimTrack} The new or modified animation.
-     */
-    GlbExtensionRegistry.prototype.applyAnimationExtensions = function (animation, extensionData, gltf) {
-        return this.applyExtensions("animation", animation, extensionData, gltf);
     };
 
     GlbExtensionRegistry.prototype.globalExtensionData = function () {
