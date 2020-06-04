@@ -100,6 +100,20 @@ Object.assign(pc, function () {
      */
 
     /**
+     * @name pc.Application#glbExtensions
+     * @type {pc.GlbExtensionRegistry}
+     * @description The GLB extension registry managed by the application.
+     * @example
+     * // Add callback for handling extension 'MY_custom_extension' on 'node' object when parsing GLB file
+     * this.app.glbExtensions.add('node', 'MY_custom_extension', function (node, nodeData, glbData) {
+     *     var extensionData = nodeData.extensions.MY_custom_extension;
+     *     var globalExtensionData = glbData.extensions.MY_custom_extension;
+     *     // do something with node using extension data
+     *     return node;
+     * });
+     */
+
+    /**
      * @name pc.Application#graphicsDevice
      * @type {pc.GraphicsDevice}
      * @description The graphics device used by the application.
@@ -316,6 +330,8 @@ Object.assign(pc, function () {
         this.i18n = new pc.I18n(this);
 
         this.scenes = new pc.SceneRegistry(this);
+
+        this.glbExtensions = new pc.GlbExtensionRegistry();
 
         var self = this;
         this.defaultLayerWorld = new pc.Layer({
@@ -603,7 +619,7 @@ Object.assign(pc, function () {
         this.loader.addHandler("textureatlas", new pc.TextureAtlasHandler(this.loader));
         this.loader.addHandler("sprite", new pc.SpriteHandler(this.assets, this.graphicsDevice));
         this.loader.addHandler("template", new pc.TemplateHandler(this));
-        this.loader.addHandler("container", new pc.ContainerHandler(this.graphicsDevice, this.scene.defaultMaterial));
+        this.loader.addHandler("container", new pc.ContainerHandler(this.graphicsDevice, this.scene.defaultMaterial, this.glbExtensions));
 
         this.systems = new pc.ComponentSystemRegistry();
         this.systems.add(new pc.RigidBodyComponentSystem(this));
@@ -1816,6 +1832,9 @@ Object.assign(pc, function () {
 
             this.scenes.destroy();
             this.scenes = null;
+
+            this.glbExtensions.destroy();
+            this.glbExtensions = null;
 
             this.lightmapper.destroy();
             this.lightmapper = null;

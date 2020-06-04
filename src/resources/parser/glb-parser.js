@@ -1306,7 +1306,7 @@ Object.assign(pc, function () {
         return gltf.skins.map(function (skinData) {
             var skin = createSkin(device, skinData, gltf.accessors, gltf.bufferViews, nodes, buffers);
             if (skinData.hasOwnProperty("extensions") && applyExtensions) {
-                return applyExtensions(skin, skinData, gltf);
+                return applyExtensions(skin, skinData.extensions, gltf);
             }
             return skin;
         });
@@ -1322,7 +1322,7 @@ Object.assign(pc, function () {
         return gltf.meshes.map(function (meshData) {
             var meshGroup = createMeshGroup(device, meshData, gltf.accessors, gltf.bufferViews, buffers, callback);
             if (meshData.hasOwnProperty("extensions") && applyExtensions) {
-                return applyExtensions(meshGroup, meshData, gltf);
+                return applyExtensions(meshGroup, meshData.extensions, gltf);
             }
             return meshGroup;
         });
@@ -1336,7 +1336,7 @@ Object.assign(pc, function () {
         return gltf.materials.map(function (materialData) {
             var material = createMaterial(materialData, textures);
             if (materialData.hasOwnProperty("extensions") && applyExtensions) {
-                return applyExtensions(material, materialData, gltf);
+                return applyExtensions(material, materialData.extensions, gltf);
             }
             return material;
         });
@@ -1350,7 +1350,7 @@ Object.assign(pc, function () {
         return gltf.textures.map(function (textureData) {
             var texture = createTexture(device, textureData, gltf.samplers, images);
             if (textureData.hasOwnProperty("extensions") && applyExtensions) {
-                return applyExtensions(texture, textureData, gltf);
+                return applyExtensions(texture, textureData.extensions, gltf);
             }
             return texture;
         });
@@ -1368,7 +1368,7 @@ Object.assign(pc, function () {
 
             var animTrack = animation.track;
             if (animationData.hasOwnProperty("extensions") && applyExtensions) {
-                animTrack = applyExtensions(animTrack, animationData, gltf);
+                animTrack = applyExtensions(animTrack, animationData.extensions, gltf);
             }
             animTracks.push(animTrack);
 
@@ -1397,7 +1397,7 @@ Object.assign(pc, function () {
         var nodes = gltf.nodes.map(function (nodeData, nodeIndex) {
             var node = createNode(nodeData, nodeIndex);
             if (nodeData.hasOwnProperty("extensions") && applyExtensions) {
-                return applyExtensions(node, nodeData, gltf);
+                return applyExtensions(node, nodeData.extensions, gltf);
             }
             return node;
         });
@@ -1427,7 +1427,7 @@ Object.assign(pc, function () {
         return gltf.scenes.map(function (sceneData, sceneIndex) {
             var scene = createScene(sceneData, sceneIndex, nodes);
             if (sceneData.hasOwnProperty("extensions") && applyExtensions) {
-                return applyExtensions(scene, sceneData, gltf);
+                return applyExtensions(scene, sceneData.extensions, gltf);
             }
             return scene;
         });
@@ -1471,43 +1471,9 @@ Object.assign(pc, function () {
         return models;
     };
 
-    var getExtensionHandlers = function () {
-        return {
-            nodes: function (node, nodeData, gltf) {
-                console.log('NODE_EXTENSIONS', node.name, nodeData.extensions);
-                return node;
-            },
-            scenes: function (scene) {
-                return scene;
-            },
-            textures: function (texture, textureData, gltf) {
-                var extensions = textureData.extensions;
-                console.log('TEXTURE_EXTENSIONS', texture, textureData.extensions);
-                if (extensions.hasOwnProperty("EPIC_texture_cubemap")) {
-                    return new pc.Texture(texture.device);
-                }
-                return texture;
-            },
-            materials: function (material) {
-                return material;
-            },
-            meshes: function (mesh) {
-                return mesh;
-            },
-            skins: function (skin) {
-                return skin;
-            },
-            animations: function (animation) {
-                return animation;
-            }
-        };
-    };
-
     // create engine resources from the downloaded GLB data
-    var createResources = function (device, gltf, buffers, images, defaultMaterial, callback) {
-        var extensions = getExtensionHandlers();
-
-        var nodes = createNodes(gltf, extensions.nodes);
+    var createResources = function (device, gltf, buffers, images, defaultMaterial, extensionRegistry, callback) {
+        var nodes = createNodes(gltf, extensionRegistry.applyNodeExtensions);
         var nodeComponents = nodes.map(function () {
             return {
                 model: null,
@@ -1515,14 +1481,14 @@ Object.assign(pc, function () {
             };
         });
 
-        var scenes = createScenes(gltf, nodes, extensions.scenes);
+        var scenes = createScenes(gltf, nodes, extensionRegistry.applySceneExtensions);
         var scene = getDefaultScene(gltf, scenes);
-        var textures = createTextures(device, gltf, images, extensions.textures);
-        var materials = createMaterials(gltf, textures, extensions.materials);
-        var meshGroups = createMeshGroups(device, gltf, buffers, extensions.meshes, callback);
-        var skins = createSkins(device, gltf, nodes, buffers, extensions.skins);
+        var textures = createTextures(device, gltf, images, extensionRegistry.applyTextureExtensions);
+        var materials = createMaterials(gltf, textures, extensionRegistry.applyMaterialExtensions);
+        var meshGroups = createMeshGroups(device, gltf, buffers, extensionRegistry.applyMeshExtensions, callback);
+        var skins = createSkins(device, gltf, nodes, buffers, extensionRegistry.applySkinExtensions);
         var models = createModels(gltf, nodes, nodeComponents, meshGroups, skins, materials, defaultMaterial);
-        var animations = createAnimations(gltf, nodes, nodeComponents, buffers, extensions.animations);
+        var animations = createAnimations(gltf, nodes, nodeComponents, buffers, extensionRegistry.applyAnimationExtensions);
 
         callback(null, {
             'nodes': nodes,
@@ -1797,7 +1763,7 @@ Object.assign(pc, function () {
     var GlbParser = function () { };
 
     // parse the gltf or glb data asynchronously, loading external resources
-    GlbParser.parseAsync = function (filename, urlBase, data, device, defaultMaterial, callback) {
+    GlbParser.parseAsync = function (filename, urlBase, data, device, defaultMaterial, extensionRegistry, callback) {
         // parse the data
         parseChunk(filename, data, function (err, chunks) {
             if (err) {
@@ -1826,7 +1792,7 @@ Object.assign(pc, function () {
                             return;
                         }
 
-                        createResources(device, gltf, buffers, images, defaultMaterial, callback);
+                        createResources(device, gltf, buffers, images, defaultMaterial, extensionRegistry, callback);
                     });
                 });
             });
@@ -1834,7 +1800,7 @@ Object.assign(pc, function () {
     };
 
     // parse the gltf or glb data synchronously. external resources (buffers and images) are ignored.
-    GlbParser.parse = function (filename, data, device, defaultMaterial) {
+    GlbParser.parse = function (filename, data, device, defaultMaterial, extensionRegistry) {
         var result = null;
 
         // parse the data
@@ -1851,7 +1817,7 @@ Object.assign(pc, function () {
                         var images = [];
 
                         // create resources
-                        createResources(device, gltf, buffers, images, defaultMaterial, function (err, result_) {
+                        createResources(device, gltf, buffers, images, defaultMaterial, extensionRegistry, function (err, result_) {
                             if (err) {
                                 console.error(err);
                             } else {

@@ -85,10 +85,12 @@ Object.assign(pc, function () {
      * textures, scenes and animations.
      * @param {pc.GraphicsDevice} device - The graphics device that will be rendering.
      * @param {pc.StandardMaterial} defaultMaterial - The shared default material that is used in any place that a material is not specified.
+     * @param {pc.GlbExtensionRegistry} glbExtensionRegistry - Registry containing callbacks for parsing GLB extensions.
      */
-    var ContainerHandler = function (device, defaultMaterial) {
+    var ContainerHandler = function (device, defaultMaterial, glbExtensionRegistry) {
         this._device = device;
         this._defaultMaterial = defaultMaterial;
+        this._glbExtensionRegistry = glbExtensionRegistry;
     };
 
     Object.assign(ContainerHandler.prototype, {
@@ -113,7 +115,7 @@ Object.assign(pc, function () {
 
                 if (!err) {
                     var filename = (asset.file && asset.file.filename) ? asset.file.filename : asset.name;
-                    pc.GlbParser.parseAsync(filename, pc.path.extractPath(url.original), response, self._device, self._defaultMaterial, function (err, result) {
+                    pc.GlbParser.parseAsync(filename, pc.path.extractPath(url.original), response, self._device, self._defaultMaterial, self._glbExtensionRegistry, function (err, result) {
                         if (err) {
                             callback(err);
                         } else {
