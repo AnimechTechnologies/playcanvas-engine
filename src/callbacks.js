@@ -187,8 +187,9 @@
  /**
   * @callback pc.callbacks.ApplyGlbExtension
   * @description Callback used by {@link pc.GlbExtensionRegistry} to apply extension data to parsed GLB objects.
-  * @param {pc.GlbExtensionItem} item - The engine object to be modified or replaced.
-  * @param {object} extensionData - The object containing extension data that should be applied to "item".
-  * @param {object} gltf - The original glTF file. Can be used to find objects referenced in "extensionData".
-  * @returns {pc.GlbExtensionItem} The new or modified engine object derived from "item" using "extensionData". Must be of the same type as "item".
+  * @param {TObject} object - The object to be modified or replaced.
+  * @param {object} extensionData - Extension data that should be applied to "object".
+  * @param {object} glb - The original GLB contents. Can be used to find GLB objects referenced in "extensionData".
+  * @returns {TObject} The new or modified object derived from "object" using "extensionData". Must be of the same type as "object".
+  * @template TObject
   */
