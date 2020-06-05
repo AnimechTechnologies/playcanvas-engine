@@ -184,12 +184,14 @@
  * @param {pc.XrHitTestSource|null} hitTestSource - object that provides access to hit results against real world geometry.
  */
 
+ /* eslint-disable jsdoc/check-tag-names, jsdoc/no-undefined-types */
  /**
-  * @callback pc.callbacks.ApplyGlbExtension
-  * @description Callback used by {@link pc.GlbExtensionRegistry} to apply extension data to parsed GLB objects.
+  * @callback pc.callbacks.ParseGlbExtension
+  * @description Function used by {@link pc.GlbExtensionRegistry} to apply extension data to parsed glTF objects.
   * @param {TObject} object - The object to be modified or replaced.
   * @param {object} extensionData - Extension data that should be applied to "object".
-  * @param {object} glb - The original GLB contents. Can be used to find GLB objects referenced in "extensionData".
+  * @param {object} gltf - The contents of the glTF file being parsed. Can be used to find glTF objects referenced in "extensionData".
   * @returns {TObject} The new or modified object derived from "object" using "extensionData". Must be of the same type as "object".
   * @template TObject
   */
+/* eslint-enable jsdoc/check-tag-names, jsdoc/no-undefined-types */
