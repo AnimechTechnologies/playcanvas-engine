@@ -104,9 +104,8 @@ Object.assign(pc, function () {
      * @type {pc.GlbExtensionRegistry}
      * @description The GLB extension registry managed by the application.
      * @example
-     * // Add callback for handling extension 'MY_custom_extension' on 'node' object when parsing GLB file
-     * this.app.glbExtensions.add('node', 'MY_custom_extension', function (node, nodeData, glbData) {
-     *     var extensionData = nodeData.extensions.MY_custom_extension;
+     * // Add callback for handling extension 'MY_custom_extension' on 'node' objects when parsing GLB file
+     * this.app.glbExtensions.node.add('MY_custom_extension', function (node, extensionData, glbData) {
      *     var globalExtensionData = glbData.extensions.MY_custom_extension;
      *     // do something with node using extension data
      *     return node;
