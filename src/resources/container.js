@@ -52,6 +52,7 @@ Object.assign(pc, function () {
                 this.scenes.forEach(function (scene) {
                     scene.destroy();
                 });
+                this.scenes = null;
             }
 
             if (this.animations) {
@@ -97,6 +98,10 @@ Object.assign(pc, function () {
     };
 
     Object.assign(ContainerHandler.prototype, {
+        _getUrlWithoutParams: function (url) {
+            return url.indexOf('?') >= 0 ? url.split('?')[0] : url;
+        },
+
         load: function (url, callback, asset) {
             if (typeof url === 'string') {
                 url = {
@@ -117,15 +122,21 @@ Object.assign(pc, function () {
                     return;
 
                 if (!err) {
-                    var filename = (asset.file && asset.file.filename) ? asset.file.filename : asset.name;
-                    pc.GlbParser.parseAsync(filename, pc.path.extractPath(url.original), response, self._device, self._defaultMaterial, self._glbExtensionRegistry, function (err, result) {
-                        if (err) {
-                            callback(err);
-                        } else {
-                            // return everything
-                            callback(null, new ContainerResource(result));
-                        }
-                    });
+                    pc.GlbParser.parseAsync(self._getUrlWithoutParams(url.original),
+                                            pc.path.extractPath(url.load),
+                                            response,
+                                            self._device,
+                                            self._defaultMaterial,
+                                            asset.registry,
+                                            self._glbExtensionRegistry,
+                                            function (err, result) {
+                                                if (err) {
+                                                    callback(err);
+                                                } else {
+                                                    // return everything
+                                                    callback(null, new ContainerResource(result));
+                                                }
+                                            });
                 } else {
                     callback(pc.string.format("Error loading model: {0} [{1}]", url.original, err));
                 }
@@ -161,15 +172,13 @@ Object.assign(pc, function () {
                 return createAsset('material', material, index);
             });
 
-            // create texture assets
-            var textureAssets = data.textures.map(function (texture, index) {
-                return createAsset('texture', texture, index);
-            });
-
             // create animation assets
             var animationAssets = data.animations.map(function (animation, index) {
                 return createAsset('animation', animation, index);
             });
+
+            // texture assets are created in the parser
+            var textureAssets = data.textures;
 
             // add components to nodes
             data.nodes.forEach(function (node, nodeIndex) {
