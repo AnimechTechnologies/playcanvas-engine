@@ -1364,7 +1364,7 @@ Object.assign(pc, function () {
 
     // create engine resources from the downloaded GLB data
     var createResources = function (device, gltf, buffers, textureAssets, defaultMaterial, extensionRegistry, callback) {
-        var nodes = createNodes(gltf);
+        var nodes = createNodes(gltf, extensionRegistry.node.applyAll);
         var nodeComponents = nodes.map(function () {
             return {
                 model: null,
