@@ -1348,6 +1348,20 @@ Object.assign(pc, function () {
         return models;
     };
 
+    var getTextures = function (gltf, textureAssets, applyExtensions) {
+        if (!gltf.hasOwnProperty('textures') || gltf.textures.length === 0) {
+            return [];
+        }
+
+        return gltf.textures.map(function (textureData) {
+            var texture = textureAssets[textureData.source].resource;
+            if (textureData.hasOwnProperty("extensions") && applyExtensions) {
+                return applyExtensions(texture, textureData.extensions, gltf);
+            }
+            return texture;
+        });
+    };
+
     // create engine resources from the downloaded GLB data
     var createResources = function (device, gltf, buffers, textureAssets, defaultMaterial, extensionRegistry, callback) {
         var nodes = createNodes(gltf);
@@ -1359,9 +1373,7 @@ Object.assign(pc, function () {
         });
         var scenes = createScenes(gltf, nodes, extensionRegistry.scene.applyAll);
         var scene = getDefaultScene(gltf, scenes);
-        var textures = gltf.textures ? gltf.textures.map(function (t) {
-            return textureAssets[t.source].resource;
-        }) : [];
+        var textures = getTextures(gltf, textureAssets, extensionRegistry.texture.applyAll);
         var materials = createMaterials(gltf, textures, extensionRegistry.material.applyAll);
         var meshGroups = createMeshGroups(device, gltf, buffers, extensionRegistry.mesh.applyAll, callback);
         var skins = createSkins(device, gltf, nodes, buffers, extensionRegistry.skin.applyAll);
