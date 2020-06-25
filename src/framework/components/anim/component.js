@@ -1,7 +1,6 @@
 Object.assign(pc, function () {
 
     /**
-     * @private
      * @component Anim
      * @class
      * @name pc.AnimComponent
@@ -21,7 +20,6 @@ Object.assign(pc, function () {
 
     Object.assign(AnimComponent.prototype, {
         /**
-         * @private
          * @function
          * @name pc.AnimComponent#loadStateGraph
          * @description Initialises component animation controllers using the provided state graph.
@@ -93,7 +91,6 @@ Object.assign(pc, function () {
         },
 
         /**
-         * @private
          * @function
          * @name pc.AnimComponent#findAnimationLayer
          * @description Finds a pc.AnimComponentLayer in this component.
