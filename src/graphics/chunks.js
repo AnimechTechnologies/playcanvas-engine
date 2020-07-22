@@ -25,6 +25,9 @@ import baseNineSlicedVS from './program-lib/chunks/baseNineSliced.vert';
 import baseNineSlicedTiledPS from './program-lib/chunks/baseNineSlicedTiled.frag';
 import biasConstPS from './program-lib/chunks/biasConst.frag';
 import blurVSMPS from './program-lib/chunks/blurVSM.frag';
+import clearCoatPS from './program-lib/chunks/clearCoat.frag';
+import clearCoatGlossPS from './program-lib/chunks/clearCoatGloss.frag';
+import clearCoatNormalPS from './program-lib/chunks/clearCoatNormal.frag';
 import combineClearCoatPS from './program-lib/chunks/combineClearCoat.frag';
 import combineDiffusePS from './program-lib/chunks/combineDiffuse.frag';
 import combineDiffuseSpecularPS from './program-lib/chunks/combineDiffuseSpecular.frag';
@@ -223,6 +226,9 @@ var shaderChunks = {
     baseNineSlicedTiledPS: baseNineSlicedTiledPS,
     biasConstPS: biasConstPS,
     blurVSMPS: blurVSMPS,
+    clearCoatPS: clearCoatPS,
+    clearCoatGlossPS: clearCoatGlossPS,
+    clearCoatNormalPS: clearCoatNormalPS,
     combineClearCoatPS: combineClearCoatPS,
     combineDiffusePS: combineDiffusePS,
     combineDiffuseSpecularPS: combineDiffuseSpecularPS,
