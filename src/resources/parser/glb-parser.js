@@ -974,7 +974,7 @@ var createMaterial = function (gltfMaterial, textures) {
                 }
                 break;
             case 'BLEND':
-                material.blendType = BLEND_NORMAL;
+                material.blendType = BLEND_PREMULTIPLIED;
                 break;
             default:
             case 'OPAQUE':
