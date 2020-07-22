@@ -997,7 +997,7 @@ var createMaterial = function (gltfMaterial, textures) {
         var ccData = gltfMaterial.extensions.KHR_materials_clearcoat;
 
         if (ccData.hasOwnProperty('clearcoatFactor')) {
-            material.clearCoat = ccData.clearcoatFactor;
+            material.clearCoat = ccData.clearcoatFactor * 0.25; // TODO: remove temp workaround for replicating glTF's visuals
         } else {
             material.clearCoat = 0;
         }
