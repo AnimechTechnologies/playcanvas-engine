@@ -7,31 +7,23 @@ import { Asset } from '../asset/asset.js';
 import { GlbParser } from './parser/glb-parser.js';
 
 /**
- * Maps an entity to a number of animation assets. Animations can be added to the node with either
- * pc.AnimationComponent or pc.AnimComponent.
- *
- * @typedef {object} pc.ContainerResourceAnimationMapping
- * @property {pc.Entity} node Entity that should be animated.
- * @property {number[]} animations Indexes of animations assets to be assigned to node.
- */
-
-/**
  * @class
  * @name pc.ContainerResource
- * @classdesc Container for a list of animations, textures, materials, models, scenes (as entities)
- * and a default scene (as entity). Entities in scene hierarchies will have model and animation components
- * attached to them.
+ * @classdesc Container for a list of animations, images, textures, materials, models, nodes, scenes, default scene
+ * cameras and lights. Entities in scene hierarchies will have model, camera and light components attached to them.
+ * Animation components have to be added manually (using nodeAnimations) as either pc.AnimComponent or pc.AnimationComponent.
  * @param {object} data - The loaded GLB data.
- * @property {pc.Entity|null} scene The root entity of the default scene.
- * @property {pc.Entity[]} scenes The root entities of all scenes.
- * @property {pc.CameraComponent[]} cameras Camera components.
- * @property {pc.LightComponent[]} lights Light components.
- * @property {pc.Entity[]} nodes Entity per GLB node.
- * @property {pc.Asset[]} materials Material assets.
- * @property {pc.Asset[]} textures Texture assets per GLB image.
- * @property {pc.Asset[]} animations Animation assets.
- * @property {pc.ContainerResourceAnimationMapping[]} nodeAnimations Mapping of animations to node entities.
- * @property {pc.Asset[]} models Model assets per GLB mesh.
+ * @property {pc.Entity|null} scene Root entity of the default GLB scene.
+ * @property {pc.Entity[]} scenes Root entities of scenes indexed by GLB scenes.
+ * @property {pc.CameraComponent[]} cameras Instanced camera components, does not match index of GLB cameras.
+ * @property {pc.LightComponent[]} lights Instanced light components, does not match index of GLB lights.
+ * @property {pc.Entity[]} nodes Entities indexed by GLB nodes.
+ * @property {pc.Asset[]} materials Material assets indexed by GLB materials.
+ * @property {pc.Asset[]} textures Texture assets indexed by GLB textures.
+ * @property {pc.Asset[]} images Texture assets indexed by GLB images.
+ * @property {pc.Asset[]} animations Animation assets indexed by GLB animations.
+ * @property {number[][]} nodeAnimations Animation asset indices indexed by GLB nodes.
+ * @property {pc.Asset[]} models Model assets indexed by GLB meshes.
  * @property {pc.AssetRegistry} registry The asset registry.
  */
 function ContainerResource(data) {
@@ -43,6 +35,7 @@ function ContainerResource(data) {
     this.nodes = [];
     this.materials = [];
     this.textures = [];
+    this.images = [];
     this.animations = [];
     this.nodeAnimations = [];
     this.models = [];
@@ -61,7 +54,11 @@ Object.assign(ContainerResource.prototype, {
         };
 
         var destroyAssets = function (assets) {
-            assets.forEach(destroyAsset);
+            assets.forEach(function (asset) {
+                if (asset) {
+                    destroyAsset(asset);
+                }
+            });
         };
 
         // destroy entities
@@ -112,8 +109,10 @@ Object.assign(ContainerResource.prototype, {
             this._nodeModels = null;
         }
 
-        if (this.textures) {
-            destroyAssets(this.textures);
+        if (this.images) {
+            // This will destroy all textures as well, since they are a subset of images
+            destroyAssets(this.images);
+            this.images = null;
             this.textures = null;
         }
 
@@ -132,7 +131,7 @@ Object.assign(ContainerResource.prototype, {
  * @name pc.ContainerHandler
  * @implements {pc.ResourceHandler}
  * @classdesc Loads files that contain multiple resources. For example glTF files can contain
- * textures, scenes and animations.
+ * textures, scenes, animations and more.
  * The asset options object can be used for passing in load time callbacks to handle the various resources
  * at different stages of loading as follows:
  * ```
@@ -248,7 +247,7 @@ Object.assign(ContainerHandler.prototype, {
 
         // create node model assets
         var nodeModelAssets = data.nodeModels.map(function (model, index) {
-            return createAsset('model', model, index);
+            return model !== null ? createAsset('model', model, index) : null;
         });
 
         // create material assets
@@ -261,38 +260,28 @@ Object.assign(ContainerHandler.prototype, {
             return createAsset('animation', animation, index);
         });
 
-        // create mapping from nodes to animations
-        var nodeAnimations = data.nodes
-            .map(function (node, nodeIndex) {
-                return {
-                    node: node,
-                    animations: data.nodeComponents[nodeIndex].animations
-                };
-            }).filter(function (mapping) {
-                return mapping.animations.length > 0;
-            });
-
         // add model components to nodes
         data.nodes.forEach(function (node, nodeIndex) {
-            var components = data.nodeComponents[nodeIndex];
-            if (components.model !== null) {
+            var modelAsset = nodeModelAssets[nodeIndex];
+            if (modelAsset !== null) {
                 node.addComponent('model', {
                     type: 'asset',
-                    asset: nodeModelAssets[components.model]
+                    asset: modelAsset
                 });
             }
         });
 
         container.data = null;                      // since assets are created, release GLB data
-        container.scene = data.scene;               // scenes are not wrapped in an Asset
-        container.scenes = data.scenes;             // scenes are not wrapped in an Asset
-        container.cameras = data.cameras;           // camera components are not wrapped in an Asset
-        container.lights = data.lights;             // light components are not wrapped in an Asset
-        container.nodes = data.nodes;               // nodes are not wrapped in an Asset
+        container.scene = data.scene;
+        container.scenes = data.scenes;
+        container.cameras = data.cameras;
+        container.lights = data.lights;
+        container.nodes = data.nodes;
         container.materials = materialAssets;
-        container.textures = data.textures;         // texture assets are created directly
+        container.textures = data.textures;         // texture assets are created in parser
+        container.images = data.images;             // texture assets are created in parser
         container.animations = animationAssets;
-        container.nodeAnimations = nodeAnimations;
+        container.nodeAnimations = data.nodeAnimations;
         container.models = modelAssets;
         container._nodeModels = nodeModelAssets;    // keep model refs for when container is destroyed
         container.registry = assets;

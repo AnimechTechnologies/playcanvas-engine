@@ -1441,24 +1441,20 @@ var createLight = function (gltfLight, node) {
     return cameraNode.addComponent("light", lightProps);
 };
 
-var createSkinInstances = function (model, skin) {
-    return model.meshInstances.map(function (meshInstance) {
-        meshInstance.mesh.skin = skin;
-
-        var skinInstance = new SkinInstance(skin);
-        skinInstance.bones = skin.bones;
-
-        meshInstance.skinInstance = skinInstance;
-        return skinInstance;
-    });
-};
-
 var createSkins = function (device, gltf, nodes, buffers) {
     if (!gltf.hasOwnProperty('skins') || gltf.skins.length === 0) {
         return [];
     }
     return gltf.skins.map(function (gltfSkin) {
         return createSkin(device, gltfSkin, gltf.accessors, gltf.bufferViews, nodes, buffers);
+    });
+};
+
+var createSkinInstances = function (skins) {
+    return skins.map(function (skin) {
+        var skinInstance = new SkinInstance(skin);
+        skinInstance.bones = skin.bones;
+        return skinInstance;
     });
 };
 
@@ -1495,19 +1491,26 @@ var createMaterials = function (gltf, textures, options, disableFlipV) {
     });
 };
 
-var createAnimations = function (gltf, nodes, nodeComponents, buffers, options) {
-    if (!gltf.hasOwnProperty('animations') || gltf.animations.length === 0) {
+var createAnimations = function (gltf, nodes, buffers, options) {
+    var nodeAnimations = nodes.map(function () {
         return [];
+    });
+
+    if (!gltf.hasOwnProperty('animations') || gltf.animations.length === 0) {
+        return {
+            animations: [],
+            nodeAnimations: nodeAnimations
+        };
     }
 
     var preprocess = options && options.animation && options.animation.preprocess;
     var postprocess = options && options.animation && options.animation.postprocess;
 
-    return gltf.animations.map(function (gltfAnimation, index) {
+    var animations = gltf.animations.map(function (gltfAnimation, animationIndex) {
         if (preprocess) {
             preprocess(gltfAnimation);
         }
-        var animation = createAnimation(gltfAnimation, index, gltf.accessors, gltf.bufferViews, gltf.nodes, nodes, buffers);
+        var animation = createAnimation(gltfAnimation, animationIndex, gltf.accessors, gltf.bufferViews, gltf.nodes, nodes, buffers);
         if (postprocess) {
             postprocess(gltfAnimation, animation.track);
         }
@@ -1516,17 +1519,16 @@ var createAnimations = function (gltf, nodes, nodeComponents, buffers, options) 
         // animation track since the locator path in animation curves is relative
         // to its targets root node
         animation.targetRootNodes.forEach(function (rootNode) {
-            if (!nodeComponents[rootNode]) {
-                nodeComponents[rootNode] = {};
-            }
-            if (!nodeComponents[rootNode].animations) {
-                nodeComponents[rootNode].animations = [];
-            }
-            nodeComponents[rootNode].animations.push(index);
+            nodeAnimations[rootNode].push(animationIndex);
         });
 
         return animation.track;
     });
+
+    return {
+        animations: animations,
+        nodeAnimations: nodeAnimations
+    };
 };
 
 var createNodes = function (gltf, options) {
@@ -1564,15 +1566,6 @@ var createNodes = function (gltf, options) {
     }
 
     return nodes;
-};
-
-var createEmptyNodeComponents = function (nodes) {
-    return nodes.map(function () {
-        return {
-            model: null,
-            animations: []
-        };
-    });
 };
 
 var createScenes = function (gltf, nodes, options) {
@@ -1613,33 +1606,30 @@ var createModels = function (meshGroups, materials, defaultMaterial) {
     });
 };
 
-var createNodeModels = function (gltf, nodeComponents, models, skins) {
+var createNodeModels = function (gltf, models, skins, skinInstances) {
     if (!gltf.hasOwnProperty('nodes') || gltf.nodes.length === 0) {
         return [];
     }
 
-    var nodeModels = [];
-
-    gltf.nodes.forEach(function (gltfNode, nodeIndex) {
+    return gltf.nodes.map(function (gltfNode) {
         if (!gltfNode.hasOwnProperty('mesh')) {
-            return;
+            return null;
         }
 
         var model = models[gltfNode.mesh].clone();
         var skin = gltfNode.hasOwnProperty('skin') ? skins[gltfNode.skin] : null;
-        if (skin !== null) {
-            model.skinInstances = createSkinInstances(model, skin);
+        var skinInstance = gltfNode.hasOwnProperty('skin') ? skinInstances[gltfNode.skin] : null;
+
+        if (skin !== null && skinInstance !== null) {
+            model.skinInstances = model.meshInstances.map(function (meshInstance) {
+                meshInstance.mesh.skin = skin;
+                meshInstance.skinInstance = skinInstance;
+                return skinInstance;
+            });
         }
 
-        var nodeModelIndex = nodeModels.push(model) - 1;
-
-        if (!nodeComponents[nodeIndex]) {
-            nodeComponents[nodeIndex] = {};
-        }
-        nodeComponents[nodeIndex].model = nodeModelIndex;
+        return model;
     });
-
-    return nodeModels;
 };
 
 var createCameras = function (gltf, nodes, options) {
@@ -1709,7 +1699,7 @@ var createLights = function (gltf, nodes) {
 };
 
 // create engine resources from the downloaded GLB data
-var createResources = function (device, gltf, buffers, textures, defaultMaterial, options, callback) {
+var createResources = function (device, gltf, buffers, imageTextures, defaultMaterial, options, callback) {
 
     var preprocess = options && options.global && options.global.preprocess;
     var postprocess = options && options.global && options.global.postprocess;
@@ -1718,34 +1708,39 @@ var createResources = function (device, gltf, buffers, textures, defaultMaterial
         preprocess(gltf);
     }
 
+    var textures = gltf.textures ? gltf.textures.map(function (t) {
+        return imageTextures[t.source];
+    }) : [];
+
     // The original version of FACT generated incorrectly flipped V texture
     // coordinates. We must compensate by -not- flipping V in this case. Once
     // all models have been re-exported we can remove this flag.
     var disableFlipV = gltf.asset && gltf.asset.generator === 'PlayCanvas';
 
     var nodes = createNodes(gltf, options);
-    var nodeComponents = createEmptyNodeComponents(nodes);
     var scenes = createScenes(gltf, nodes, options);
     var scene = getDefaultScene(gltf, scenes);
     var cameras = createCameras(gltf, nodes, options);
     var lights = createLights(gltf, nodes);
-    var animations = createAnimations(gltf, nodes, nodeComponents, buffers, options);
-    var materials = createMaterials(gltf, gltf.textures ? gltf.textures.map(function (t) {
-        return textures[t.source].resource;
-    }) : [], options, disableFlipV);
+    var animations = createAnimations(gltf, nodes, buffers, options);
+    var materials = createMaterials(gltf, textures.map(function (textureAsset) {
+        return textureAsset.resource;
+    }), options, disableFlipV);
     var meshGroups = createMeshGroups(device, gltf, buffers, callback, disableFlipV);
     var skins = createSkins(device, gltf, nodes, buffers);
+    var skinInstances = createSkinInstances(skins);
     var models = createModels(meshGroups, materials, defaultMaterial);
-    var nodeModels = createNodeModels(gltf, nodeComponents, models, skins);
+    var nodeModels = createNodeModels(gltf, models, skins, skinInstances);
 
     var result = {
         'nodes': nodes,
-        'nodeComponents': nodeComponents,
         'models': models,
         'nodeModels': nodeModels,
-        'animations': animations,
+        'animations': animations.animations,
+        'nodeAnimations': animations.nodeAnimations,
         'scenes': scenes,
         'scene': scene,
+        'images': imageTextures,
         'textures': textures,
         'materials': materials,
         'cameras': cameras,
@@ -2107,13 +2102,13 @@ GlbParser.parseAsync = function (filename, urlBase, data, device, defaultMateria
                 }
 
                 // async load images
-                loadTexturesAsync(gltf, buffers, urlBase, registry, options, function (err, textures) {
+                loadTexturesAsync(gltf, buffers, urlBase, registry, options, function (err, imageTextures) {
                     if (err) {
                         callback(err);
                         return;
                     }
 
-                    createResources(device, gltf, buffers, textures, defaultMaterial, options, callback);
+                    createResources(device, gltf, buffers, imageTextures, defaultMaterial, options, callback);
                 });
             });
         });
@@ -2135,10 +2130,10 @@ GlbParser.parse = function (filename, data, device, defaultMaterial, options) {
                     console.error(err);
                 } else {
                     var buffers = [chunks.binaryChunk];
-                    var textures = [];
+                    var imageTextures = [];
 
                     // create resources
-                    createResources(device, gltf, buffers, textures, defaultMaterial, options || { }, function (err, result_) {
+                    createResources(device, gltf, buffers, imageTextures, defaultMaterial, options || { }, function (err, result_) {
                         if (err) {
                             console.error(err);
                         } else {
