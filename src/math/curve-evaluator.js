@@ -1,5 +1,4 @@
 import { CURVE_CARDINAL, CURVE_CATMULL, CURVE_LINEAR, CURVE_SMOOTHSTEP, CURVE_SPLINE, CURVE_STEP } from './constants.js';
-import { math } from './math.js';
 
 function CurveEvaluator(curve, time) {
     this._curve = curve;
@@ -34,10 +33,10 @@ Object.assign(CurveEvaluator.prototype, {
 
             if (type === CURVE_LINEAR) {
                 // linear
-                result = math.lerp(this._p0, this._p1, t);
+                result = pc.math.lerp(this._p0, this._p1, t);
             } else if (type === CURVE_SMOOTHSTEP) {
                 // smoothstep
-                result = math.lerp(this._p0, this._p1, t * t * (3 - 2 * t));
+                result = pc.math.lerp(this._p0, this._p1, t * t * (3 - 2 * t));
             } else {
                 // curve
                 result = this._evaluateHermite(this._p0, this._p1, this._m0, this._m1, t);

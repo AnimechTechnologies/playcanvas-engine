@@ -13,8 +13,6 @@ import {
     TEXTURETYPE_DEFAULT, TEXTURETYPE_RGBM, TEXTURETYPE_SWIZZLEGGGR
 } from './graphics.js';
 
-import { math } from '../math/math.js';
-
 /**
  * @class
  * @name pc.Texture
@@ -563,7 +561,7 @@ Object.defineProperties(Texture.prototype, {
      */
     pot: {
         get: function () {
-            return math.powerOfTwo(this._width) && math.powerOfTwo(this._height);
+            return pc.math.powerOfTwo(this._width) && pc.math.powerOfTwo(this._height);
         }
     }
 });

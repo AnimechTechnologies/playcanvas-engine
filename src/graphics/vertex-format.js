@@ -3,7 +3,6 @@ import {
     SEMANTIC_TEXCOORD0, SEMANTIC_TEXCOORD1, SEMANTIC_TEXCOORD2, SEMANTIC_TEXCOORD3, SEMANTIC_TEXCOORD4, SEMANTIC_TEXCOORD5,
     SEMANTIC_COLOR, SEMANTIC_TANGENT, TYPE_FLOAT32, typedArrayTypesByteSize
 } from './graphics.js';
-import { math } from '../math/math.js';
 
 /**
  * @class
@@ -129,7 +128,7 @@ function VertexFormat(graphicsDevice, description, vertexCount) {
         // align up the offset to elementSize (when vertexCount is specified only - case of non-interleaved format)
         elementSize = elementDesc.components * typedArrayTypesByteSize[elementDesc.type];
         if (vertexCount) {
-            offset = math.roundUp(offset, elementSize);
+            offset = pc.math.roundUp(offset, elementSize);
 
             // #ifdef DEBUG
             // non-interleaved format with elementSize not multiple of 4 might be slower on some platforms - padding is recommended to align its size

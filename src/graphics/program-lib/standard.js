@@ -4,7 +4,6 @@ import {
     SEMANTIC_ATTR0, SEMANTIC_ATTR1, SEMANTIC_ATTR2, SEMANTIC_ATTR3, SEMANTIC_ATTR4, SEMANTIC_ATTR5, SEMANTIC_ATTR6, SEMANTIC_ATTR7,
     SEMANTIC_BLENDINDICES, SEMANTIC_BLENDWEIGHT, SEMANTIC_COLOR, SEMANTIC_NORMAL, SEMANTIC_POSITION, SEMANTIC_TANGENT,
     SEMANTIC_TEXCOORD0, SEMANTIC_TEXCOORD1, SEMANTIC_TEXCOORD2, SEMANTIC_TEXCOORD3, SEMANTIC_TEXCOORD4, SEMANTIC_TEXCOORD5,
-    SEMANTIC_TEXCOORD6, SEMANTIC_TEXCOORD7,
     SHADERTAG_MATERIAL
 } from '../graphics.js';
 import { shaderChunks } from '../chunks.js';
@@ -108,17 +107,6 @@ var _oldChunkTransformUv1 = function (s, o, p) {
     _oldChunkWarn(p, o);
     return "\n#ifdef UV1LAYOUT\n" + s + "\n#else\n" + shaderChunks[o] + "\n#endif\n";
 };
-
-var _semanticTexCoords = [
-    SEMANTIC_TEXCOORD0,
-    SEMANTIC_TEXCOORD1,
-    SEMANTIC_TEXCOORD2,
-    SEMANTIC_TEXCOORD3,
-    SEMANTIC_TEXCOORD4,
-    SEMANTIC_TEXCOORD5,
-    SEMANTIC_TEXCOORD6,
-    SEMANTIC_TEXCOORD7
-];
 
 var _matTex2D = [];
 
@@ -646,7 +634,7 @@ var standard = {
 
         for (i = 0; i < maxUvSets; i++) {
             if (useUv[i]) {
-                attributes["vertex_texCoord" + i] = _semanticTexCoords[i];
+                attributes["vertex_texCoord" + i] = pc["SEMANTIC_TEXCOORD" + i];
                 code += chunks["uv" + i + "VS"];
                 codeBody += "   vec2 uv" + i + " = getUv" + i + "();\n";
             }

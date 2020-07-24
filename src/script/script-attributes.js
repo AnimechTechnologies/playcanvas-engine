@@ -2,9 +2,6 @@ import { Color } from '../core/color.js';
 
 import { Curve } from '../math/curve.js';
 import { CurveSet } from '../math/curve-set.js';
-import { Vec2 } from '../math/vec2.js';
-import { Vec3 } from '../math/vec3.js';
-import { Vec4 } from '../math/vec4.js';
 
 import { GraphNode } from '../scene/graph-node.js';
 
@@ -90,20 +87,8 @@ var rawToValue = function (app, args, value, old) {
         case 'vec4':
             var len = parseInt(args.type.slice(3), 10);
 
-            var VecX = (function () {
-                switch (len) {
-                    case 2: return Vec2;
-                    case 3: return Vec3;
-                    case 4: return Vec4;
-                    default: return null;
-                }
-            })();
-            if (VecX === null) {
-                return null;
-            }
-
-            if (value instanceof VecX) {
-                if (old instanceof VecX) {
+            if (value instanceof pc['Vec' + len]) {
+                if (old instanceof pc['Vec' + len]) {
                     old.copy(value);
                     return old;
                 }
@@ -113,7 +98,7 @@ var rawToValue = function (app, args, value, old) {
                     if (typeof value[i] !== 'number')
                         return null;
                 }
-                if (!old) old = new VecX();
+                if (!old) old = new pc['Vec' + len]();
 
                 for (i = 0; i < len; i++)
                     old[components[i]] = value[i];
