@@ -167,7 +167,6 @@ Object.defineProperties(AnimComponentLayer.prototype, {
         }
     },
     /**
-     * @readonly
      * @name pc.AnimComponentLayer#activeStateCurrentTime
      * @type {number}
      * @description The active states time in seconds
