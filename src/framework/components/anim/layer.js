@@ -156,7 +156,6 @@ Object.defineProperties(AnimComponentLayer.prototype, {
         }
     },
     /**
-     * @private
      * @readonly
      * @name pc.AnimComponentLayer#activeStateDuration
      * @type {number}
@@ -168,7 +167,6 @@ Object.defineProperties(AnimComponentLayer.prototype, {
         }
     },
     /**
-     * @private
      * @readonly
      * @name pc.AnimComponentLayer#activeStateCurrentTime
      * @type {number}
