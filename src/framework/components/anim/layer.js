@@ -1,3 +1,5 @@
+import { AnimTrack } from '../../../anim/anim.js';
+
 /**
  * @class
  * @name pc.AnimComponentLayer
@@ -55,8 +57,13 @@ Object.assign(AnimComponentLayer.prototype, {
      * @param {object} animTrack - The animation track that will be assigned to this state and played whenever this state is active.
      */
     assignAnimation: function (nodeName, animTrack) {
+        if (animTrack.constructor !== AnimTrack) {
+            // #ifdef DEBUG
+            console.error('assignAnimation: animTrack supplied to function was not of type AnimTrack');
+            // #endif
+            return;
+        }
         this._controller.assignAnimation(nodeName, animTrack);
-
         if (this._component.activate && this._component.playable) {
             this._component.playing = true;
         }
@@ -71,6 +78,7 @@ Object.assign(AnimComponentLayer.prototype, {
      */
     removeNodeAnimations: function (nodeName) {
         this._controller.removeNodeAnimations(nodeName);
+        this._component.playing = false;
     }
 });
 
@@ -145,6 +153,33 @@ Object.defineProperties(AnimComponentLayer.prototype, {
     activeStateProgress: {
         get: function () {
             return this._controller.activeStateProgress;
+        }
+    },
+    /**
+     * @private
+     * @readonly
+     * @name pc.AnimComponentLayer#activeStateDuration
+     * @type {number}
+     * @description Returns the currently active states duration.
+     */
+    activeStateDuration: {
+        get: function () {
+            return this._controller.activeStateDuration;
+        }
+    },
+    /**
+     * @private
+     * @readonly
+     * @name pc.AnimComponentLayer#activeStateCurrentTime
+     * @type {number}
+     * @description The active states time in seconds
+     */
+    activeStateCurrentTime: {
+        get: function () {
+            return this._controller.activeStateCurrentTime;
+        },
+        set: function (time) {
+            this._controller.activeStateCurrentTime = time;
         }
     },
     /**
