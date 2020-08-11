@@ -26,7 +26,7 @@ import { VertexBuffer } from '../../graphics/vertex-buffer.js';
 import { VertexFormat } from '../../graphics/vertex-format.js';
 
 import {
-    BLEND_NONE, BLEND_PREMULTIPLIED, PROJECTION_PERSPECTIVE, PROJECTION_ORTHOGRAPHIC, ASPECT_MANUAL, ASPECT_AUTO, LIGHTFALLOFF_INVERSESQUARED
+    BLEND_NONE, BLEND_NORMAL, PROJECTION_PERSPECTIVE, PROJECTION_ORTHOGRAPHIC, ASPECT_MANUAL, ASPECT_AUTO, LIGHTFALLOFF_INVERSESQUARED
 } from '../../scene/constants.js';
 import { calculateNormals } from '../../scene/procedural.js';
 import { GraphNode } from '../../scene/graph-node.js';
@@ -1020,7 +1020,7 @@ var createMaterial = function (gltfMaterial, textures, disableFlipV) {
                 }
                 break;
             case 'BLEND':
-                material.blendType = BLEND_PREMULTIPLIED;
+                material.blendType = BLEND_NORMAL;
                 break;
             default:
             case 'OPAQUE':
