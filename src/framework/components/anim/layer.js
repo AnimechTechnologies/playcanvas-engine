@@ -120,7 +120,6 @@ Object.defineProperties(AnimComponentLayer.prototype, {
         }
     },
     /**
-     * @private
      * @readonly
      * @name pc.AnimComponentLayer#activeState
      * @type {string}
