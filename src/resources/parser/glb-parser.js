@@ -1409,24 +1409,24 @@ var createCamera = function (gltfCamera, node) {
     };
 
     if (gltfCamera.type === "orthographic") {
-        const orthographic = gltfCamera.orthographic;
-        const xMag = orthographic.xmag;
-        const yMag = orthographic.ymag;
-        const aspectRatio = xMag !== undefined ? xMag / yMag  : undefined;
+        var orthographic = gltfCamera.orthographic;
+        var xMag = orthographic.xmag;
+        var yMag = orthographic.ymag;
+        var orthographicAR = xMag !== undefined ? xMag / yMag  : undefined;
 
         cameraProps.projection = PROJECTION_ORTHOGRAPHIC;
-        cameraProps.aspectRatioMode = aspectRatio !== undefined ? ASPECT_MANUAL : ASPECT_AUTO;
-        cameraProps.aspectRatio = aspectRatio;
+        cameraProps.aspectRatioMode = orthographicAR !== undefined ? ASPECT_MANUAL : ASPECT_AUTO;
+        cameraProps.aspectRatio = orthographicAR;
         cameraProps.orthoHeight = yMag;
         cameraProps.farClip = orthographic.zfar;
         cameraProps.nearClip = orthographic.znear;
     } else {
-        const perspective = gltfCamera.perspective;
-        const aspectRatio = perspective.aspectRatio;
+        var perspective = gltfCamera.perspective;
+        var perspectiveAR = perspective.aspectRatio;
 
         cameraProps.projection = PROJECTION_PERSPECTIVE;
-        cameraProps.aspectRatioMode = aspectRatio !== undefined ? ASPECT_MANUAL : ASPECT_AUTO;
-        cameraProps.aspectRatio = aspectRatio;
+        cameraProps.aspectRatioMode = perspectiveAR !== undefined ? ASPECT_MANUAL : ASPECT_AUTO;
+        cameraProps.aspectRatio = perspectiveAR;
         cameraProps.fov = perspective.yfov * math.RAD_TO_DEG;
         cameraProps.farClip = perspective.zfar;
         cameraProps.nearClip = perspective.znear;
@@ -1442,7 +1442,7 @@ var createLight = function (gltfLight, node) {
     };
 
     if (gltfLight.hasOwnProperty('color')) {
-        lightProps.color = new Color(...gltfLight.color);
+        lightProps.color = new Color(gltfLight.color);
     }
 
     if (gltfLight.hasOwnProperty('intensity')) {
