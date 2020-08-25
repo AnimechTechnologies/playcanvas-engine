@@ -1470,7 +1470,7 @@ var createLight = function (gltfLight, node) {
     }
 
     // Rotate to match light orientation in glTF specification
-    const lightNode = new Entity(node.name);
+    var lightNode = new Entity(node.name);
     lightNode.rotateLocal(90, 0, 0);
     node.addChild(lightNode);
 
