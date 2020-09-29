@@ -24,6 +24,7 @@ import {
 import { IndexBuffer } from '../../graphics/index-buffer.js';
 import { VertexBuffer } from '../../graphics/vertex-buffer.js';
 import { VertexFormat } from '../../graphics/vertex-format.js';
+import { Texture } from '../../graphics/texture.js';
 
 import {
     BLEND_NONE, BLEND_NORMAL, PROJECTION_PERSPECTIVE, PROJECTION_ORTHOGRAPHIC, ASPECT_MANUAL, ASPECT_AUTO, LIGHTFALLOFF_INVERSESQUARED
@@ -326,18 +327,18 @@ var cloneTexture = function (texture) {
         return result;
     };
 
-    var result = new pc.Texture(texture.device, texture);   // duplicate texture
-    result._levels = shallowCopyLevels(texture);            // shallow copy the levels structure
+    var result = new Texture(texture.device, texture);   // duplicate texture
+    result._levels = shallowCopyLevels(texture);         // shallow copy the levels structure
     return result;
 };
 
 // given a texture asset, clone it
 var cloneTextureAsset = function (src) {
-    var result = new pc.Asset(src.name + '_clone',
-                              src.type,
-                              src.file,
-                              src.data,
-                              src.options);
+    var result = new Asset(src.name + '_clone',
+                           src.type,
+                           src.file,
+                           src.data,
+                           src.options);
     result.loaded = true;
     result.resource = cloneTexture(src.resource);
     src.registry.add(result);
