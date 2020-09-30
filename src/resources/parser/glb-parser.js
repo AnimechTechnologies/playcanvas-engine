@@ -1,5 +1,6 @@
 import { path } from '../../core/path.js';
 import { Color } from '../../core/color.js';
+import { objectHashCode } from '../../core/hash.js';
 
 import { http } from '../../net/http.js';
 
@@ -611,10 +612,22 @@ var createSkin = function (device, gltfSkin, accessors, bufferViews, nodes) {
 var tempMat = new Mat4();
 var tempVec = new Vec3();
 
-var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callback, disableFlipV) {
-    var meshes = [];
+var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callback, disableFlipV, meshByPrimitiveHash) {
+    var meshGroup = [];
 
     gltfMesh.primitives.forEach(function (primitive) {
+
+        // Generate unique hash for primitive without material
+        var primitiveHash = objectHashCode(primitive, ["material"]);
+
+        // Use mesh matching the primitive hash if it exists
+        if (meshByPrimitiveHash.hasOwnProperty(primitiveHash)) {
+            meshGroup.push({
+                mesh: meshByPrimitiveHash[primitiveHash],
+                materialIndex: primitive.material
+            });
+            return;
+        }
 
         var primitiveType, vertexBuffer, numIndices;
         var indices = null;
@@ -744,8 +757,6 @@ var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callba
             mesh.primitive[0].count = vertexBuffer.numVertices;
         }
 
-        mesh.materialIndex = primitive.material;
-
         var accessor = accessors[primitive.attributes.POSITION];
         var min = accessor.min;
         var max = accessor.max;
@@ -798,10 +809,16 @@ var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callba
             }
         }
 
-        meshes.push(mesh);
+        // Store mesh by primitive hash so it can be reused for equivalent primitives
+        meshByPrimitiveHash[primitiveHash] = mesh;
+
+        meshGroup.push({
+            mesh: mesh,
+            materialIndex: primitive.material
+        });
     });
 
-    return meshes;
+    return meshGroup;
 };
 
 var createMaterial = function (gltfMaterial, textures, disableFlipV) {
@@ -1382,8 +1399,10 @@ var createModel = function (name, meshGroup, materials, defaultMaterial) {
     var model = new Model();
     model.graph = new GraphNode(name);
 
-    meshGroup.forEach(function (mesh) {
-        var material = (mesh.materialIndex === undefined) ? defaultMaterial : materials[mesh.materialIndex];
+    meshGroup.forEach(function (meshAndMaterial) {
+        var mesh = meshAndMaterial.mesh;
+        var materialIndex = meshAndMaterial.materialIndex;
+        var material = (materialIndex === undefined) ? defaultMaterial : materials[materialIndex];
         var meshInstance = new MeshInstance(model.graph, mesh, material);
 
         if (mesh.morph) {
@@ -1502,8 +1521,10 @@ var createMeshGroups = function (device, gltf, bufferViews, callback, disableFli
         return [];
     }
 
+    var meshByPrimitiveHash = {};
+
     return gltf.meshes.map(function (gltfMesh) {
-        return createMeshGroup(device, gltfMesh, gltf.accessors, bufferViews, callback, disableFlipV);
+        return createMeshGroup(device, gltfMesh, gltf.accessors, bufferViews, callback, disableFlipV, meshByPrimitiveHash);
     });
 };
 
