@@ -1371,6 +1371,7 @@ var standard = {
         var getGlossinessCalled = false;
 
         if (needsNormal) {
+            code += "   getViewDir();\n";
             if (options.heightMap || options.normalMap || options.clearCoatNormalMap || options.enableGGXSpecular) {
                 code += "   getTBN();\n";
             }
