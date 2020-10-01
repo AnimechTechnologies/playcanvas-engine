@@ -96,7 +96,7 @@ Object.defineProperties(AnimComponentLayer.prototype, {
     },
     /**
      * @name pc.AnimComponentLayer#playing
-     * @type {string}
+     * @type {boolean}
      * @description Whether this layer is currently playing
      */
     playing: {
@@ -110,7 +110,7 @@ Object.defineProperties(AnimComponentLayer.prototype, {
     /**
      * @readonly
      * @name pc.AnimComponentLayer#playable
-     * @type {string}
+     * @type {boolean}
      * @description Returns true if a state graph has been loaded and all states in the graph have been assigned animation tracks.
      */
     playable: {
