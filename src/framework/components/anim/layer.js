@@ -95,7 +95,6 @@ Object.defineProperties(AnimComponentLayer.prototype, {
         }
     },
     /**
-     * @private
      * @name pc.AnimComponentLayer#playing
      * @type {string}
      * @description Whether this layer is currently playing
