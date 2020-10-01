@@ -103,7 +103,6 @@ var worldMatZ = new Vec3();
 
 var frustumDiagonal = new Vec3();
 var tempSphere = { center: null, radius: 0 };
-var meshPos;
 var visibleSceneAabb = new BoundingBox();
 var boneTextureSize = [0, 0, 0, 0];
 var boneTexture, instancingData, modelMatrix, normalMatrix;
@@ -563,26 +562,6 @@ Object.assign(ForwardRenderer.prototype, {
 
     lightCompare: function (lightA, lightB) {
         return lightA.key - lightB.key;
-    },
-
-    _isVisible: function (camera, meshInstance) {
-        if (!meshInstance.visible) return false;
-
-        // custom visibility method on MeshInstance
-        if (meshInstance.isVisibleFunc) {
-            return meshInstance.isVisibleFunc(camera);
-        }
-
-        meshPos = meshInstance.aabb.center;
-        if (meshInstance._aabb._radiusVer !== meshInstance._aabbVer) {
-            meshInstance._aabb._radius = meshInstance._aabb.halfExtents.length();
-            meshInstance._aabb._radiusVer = meshInstance._aabbVer;
-        }
-
-        tempSphere.radius = meshInstance._aabb._radius;
-        tempSphere.center = meshPos;
-
-        return camera.frustum.containsSphere(tempSphere);
     },
 
     getShadowCamera: function (device, light) {
@@ -1159,7 +1138,7 @@ Object.assign(ForwardRenderer.prototype, {
                 if (drawCall.mask && (drawCall.mask & cullingMask) === 0) continue;
 
                 if (drawCall.cull) {
-                    visible = this._isVisible(camera, drawCall);
+                    visible = drawCall._isVisible(camera);
                     // #ifdef PROFILER
                     numDrawCallsCulled++;
                     // #endif
@@ -1329,8 +1308,7 @@ Object.assign(ForwardRenderer.prototype, {
         if (instancingData) {
             if (instancingData.count > 0) {
                 this._instancedDrawCalls++;
-                device.setVertexBuffer(instancingData.vertexBuffer);
-                device.draw(mesh.primitive[style], instancingData.count);
+                device.draw(mesh.primitive[style], instancingData.count, true);
                 if (instancingData.vertexBuffer === _autoInstanceBuffer) {
                     this._removedByInstancing += instancingData.count;
                     meshInstance.instancingData = null;
@@ -1355,9 +1333,7 @@ Object.assign(ForwardRenderer.prototype, {
         var style;
         var settings;
         var visibleList, visibleLength;
-
         var passFlag = 1 << SHADER_SHADOW;
-        var paramName, parameter, parameters;
 
         for (i = 0; i < lights.length; i++) {
             light = lights[i];
@@ -1492,30 +1468,14 @@ Object.assign(ForwardRenderer.prototype, {
                         }
 
                         if (material.chunks) {
-                            // Uniforms I (shadow): material
-                            parameters = material.parameters;
-                            for (paramName in parameters) {
-                                parameter = parameters[paramName];
-                                if (parameter.passFlags & passFlag) {
-                                    if (!parameter.scopeId) {
-                                        parameter.scopeId = device.scope.resolve(paramName);
-                                    }
-                                    parameter.scopeId.setValue(parameter.data);
-                                }
-                            }
+
                             this.setCullMode(true, false, meshInstance);
 
+                            // Uniforms I (shadow): material
+                            material.setParameters(device);
+
                             // Uniforms II (shadow): meshInstance overrides
-                            parameters = meshInstance.parameters;
-                            for (paramName in parameters) {
-                                parameter = parameters[paramName];
-                                if (parameter.passFlags & passFlag) {
-                                    if (!parameter.scopeId) {
-                                        parameter.scopeId = device.scope.resolve(paramName);
-                                    }
-                                    parameter.scopeId.setValue(parameter.data);
-                                }
-                            }
+                            meshInstance.setParameters(device, passFlag);
                         }
 
                         // set shader
@@ -1712,9 +1672,9 @@ Object.assign(ForwardRenderer.prototype, {
         var device = this.device;
         var scene = this.scene;
         var vrDisplay = camera.vrDisplay;
-        var passFlag = 1 << pass;
-
         var lightHash = layer ? layer._lightHash : 0;
+
+        var passFlag = 1 << pass;
 
         // #ifdef PROFILER
         var forwardStartTime = now();
@@ -1722,7 +1682,6 @@ Object.assign(ForwardRenderer.prototype, {
 
         var i, drawCall, mesh, material, objDefs, variantKey, lightMask, style, usedDirLights;
         var prevMaterial = null, prevObjDefs, prevLightMask, prevStatic;
-        var paramName, parameter, parameters;
         var stencilFront, stencilBack;
 
         var halfWidth = device.width * 0.5;
@@ -1796,16 +1755,7 @@ Object.assign(ForwardRenderer.prototype, {
                     }
 
                     // Uniforms I: material
-                    parameters = material.parameters;
-                    for (paramName in parameters) {
-                        parameter = parameters[paramName];
-                        if (parameter.passFlags & passFlag) {
-                            if (!parameter.scopeId) {
-                                parameter.scopeId = device.scope.resolve(paramName);
-                            }
-                            parameter.scopeId.setValue(parameter.data);
-                        }
-                    }
+                    material.setParameters(device);
 
                     if (!prevMaterial || lightMask !== prevLightMask) {
                         usedDirLights = this.dispatchDirectLights(sortedLights[LIGHTTYPE_DIRECTIONAL], scene, lightMask);
@@ -1874,16 +1824,7 @@ Object.assign(ForwardRenderer.prototype, {
                 }
 
                 // Uniforms II: meshInstance overrides
-                parameters = drawCall.parameters;
-                for (paramName in parameters) {
-                    parameter = parameters[paramName];
-                    if (parameter.passFlags & passFlag) {
-                        if (!parameter.scopeId) {
-                            parameter.scopeId = device.scope.resolve(paramName);
-                        }
-                        parameter.scopeId.setValue(parameter.data);
-                    }
-                }
+                drawCall.setParameters(device, passFlag);
 
                 this.setVertexBuffers(device, mesh);
                 this.setMorphing(device, drawCall.morphInstance);
@@ -1956,15 +1897,7 @@ Object.assign(ForwardRenderer.prototype, {
 
                 // Unset meshInstance overrides back to material values if next draw call will use the same material
                 if (i < drawCallsCount - 1 && drawCalls[i + 1].material === material) {
-                    for (paramName in parameters) {
-                        parameter = material.parameters[paramName];
-                        if (parameter) {
-                            if (!parameter.scopeId) {
-                                parameter.scopeId = device.scope.resolve(paramName);
-                            }
-                            parameter.scopeId.setValue(parameter.data);
-                        }
-                    }
+                    material.setParameters(device, drawCall.parameters);
                 }
 
                 prevMaterial = material;
@@ -2510,7 +2443,7 @@ Object.assign(ForwardRenderer.prototype, {
                 meshInstance = drawCalls[i];
                 visible = true;
                 if (meshInstance.cull) {
-                    visible = this._isVisible(shadowCam, meshInstance);
+                    visible = meshInstance._isVisible(shadowCam);
                 }
                 if (visible) {
                     visibleList[vlen] = meshInstance;
@@ -2615,7 +2548,7 @@ Object.assign(ForwardRenderer.prototype, {
             meshInstance = drawCalls[i];
             visible = true;
             if (meshInstance.cull) {
-                visible = this._isVisible(shadowCam, meshInstance);
+                visible = meshInstance._isVisible(shadowCam);
             }
             if (visible) {
                 visibleList[vlen] = meshInstance;
