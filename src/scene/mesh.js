@@ -266,6 +266,11 @@ Object.assign(Mesh.prototype, {
         var dx, dy, dz;
         var target;
 
+        // iterating over an empty buffer would cause a crash
+        if (numVerts < 1) {
+            return;
+        }
+
         // start with empty bone bounds
         for (i = 0; i < numBones; i++) {
             boneMin[i] = new Vec3(Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE);
