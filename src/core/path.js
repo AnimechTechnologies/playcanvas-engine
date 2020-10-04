@@ -177,11 +177,11 @@ var path = {
     /**
      * @function
      * @name pc.path.extractPath
-     * @description Return the path without file name. If path is relative path, start with period.
+     * @description Return the path without file name.
      * @param {string} pathname - The full path to process.
      * @returns {string} The path without a last element from list split by slash.
      * @example
-     * pc.path.extractPath("path/to/file.txt");    // returns "./path/to"
+     * pc.path.extractPath("path/to/file.txt");    // returns "path/to"
      * pc.path.extractPath("./path/to/file.txt");  // returns "./path/to"
      * pc.path.extractPath("../path/to/file.txt"); // returns "../path/to"
      * pc.path.extractPath("/path/to/file.txt");   // returns "/path/to"
@@ -192,26 +192,8 @@ var path = {
         var i = 0;
 
         if (parts.length > 1) {
-            if (path.isRelativePath(pathname)) {
-                if (parts[0] === ".") {
-                    for (i = 0; i < parts.length - 1; ++i) {
-                        result += (i === 0) ? parts[i] : "/" + parts[i];
-
-                    }
-                } else if (parts[0] === "..") {
-                    for (i = 0; i < parts.length - 1; ++i) {
-                        result += (i === 0) ? parts[i] : "/" + parts[i];
-                    }
-                } else {
-                    result = ".";
-                    for (i = 0; i < parts.length - 1; ++i) {
-                        result += "/" + parts[i];
-                    }
-                }
-            } else {
-                for (i = 0; i < parts.length - 1; ++i) {
-                    result += (i === 0) ? parts[i] : "/" + parts[i];
-                }
+            for (i = 0; i < parts.length - 1; ++i) {
+                result += (i === 0) ? parts[i] : "/" + parts[i];
             }
         }
         return result;
