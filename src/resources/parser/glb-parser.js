@@ -1891,7 +1891,8 @@ var loadImageAsync = function (gltfImage, index, bufferViews, urlBase, registry,
         var asset = new Asset('texture_' + index, 'texture',  file, null, { crossOrigin: crossOrigin });
         asset.on('load', function () {
             if (isBlobUrl) {
-                URL.revokeObjectURL(url);
+                // TODO: re-enable this while somehow avoiding breaking textures used by html elements for UI purposes
+                // URL.revokeObjectURL(url);
             }
             onLoad(asset);
         });
