@@ -824,6 +824,32 @@ var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callba
 
 var createMaterial = function (gltfMaterial, textures, disableFlipV) {
     // TODO: integrate these shader chunks into the native engine
+    var diffuseChunk = [
+        "#ifdef MAPCOLOR",
+        "uniform vec3 material_diffuse;",
+        "#endif",
+        "",
+        "#ifdef MAPTEXTURE",
+        "uniform sampler2D texture_diffuseMap;",
+        "#endif",
+        "",
+        "void getAlbedo() {",
+        "    dAlbedo = vec3(1.0);",
+        "",
+        "#ifdef MAPCOLOR",
+        "    dAlbedo *= material_diffuse.rgb;",
+        "#endif",
+        "",
+        "#ifdef MAPTEXTURE",
+        "    dAlbedo *= gammaCorrectInput(addAlbedoDetail(texture2D(texture_diffuseMap, $UV).$CH));",
+        "#endif",
+        "",
+        "#ifdef MAPVERTEX",
+        "    dAlbedo *= saturate(vVertexColor.$VC);",
+        "#endif",
+        "}"
+    ].join('\n');
+
     var glossChunk = [
         "#ifdef MAPFLOAT",
         "uniform float material_shininess;",
@@ -955,9 +981,7 @@ var createMaterial = function (gltfMaterial, textures, disableFlipV) {
 
     material.diffuseTint = true;
     material.diffuseVertexColor = true;
-
-    material.specularTint = true;
-    material.specularVertexColor = true;
+    material.chunks.diffusePS = diffuseChunk;
 
     if (gltfMaterial.hasOwnProperty('name')) {
         material.name = gltfMaterial.name;
