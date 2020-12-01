@@ -452,11 +452,29 @@ var createVertexBufferInternal = function (device, sourceDesc, disableFlipV) {
     return vertexBuffer;
 };
 
-var createVertexBuffer = function (device, attributes, indices, accessors, bufferViews, disableFlipV) {
-    // build vertex buffer format desc and source
-    var sourceDesc = {};
-    for (var attrib in attributes) {
+var createVertexBuffer = function (device, attributes, indices, accessors, bufferViews, disableFlipV, vertexBufferDict) {
+
+    // extract list of attributes to use
+    var attrib, useAttributes = {}, attribIds = [];
+    for (attrib in attributes) {
         if (attributes.hasOwnProperty(attrib) && gltfToEngineSemanticMap.hasOwnProperty(attrib)) {
+            useAttributes[attrib] = attributes[attrib];
+
+            // build unique id for each attribute in format: Semantic:accessorIndex
+            attribIds.push(attrib + ":" + attributes[attrib]);
+        }
+    }
+
+    // sort unique ids and create unique vertex buffer ID
+    attribIds.sort();
+    var vbKey = attribIds.join();
+
+    // return already created vertex buffer if identical
+    var vb = vertexBufferDict[vbKey];
+    if (!vb) {
+        // build vertex buffer format desc and source
+        var sourceDesc = {};
+        for (attrib in useAttributes) {
             var accessor = accessors[attributes[attrib]];
             var accessorData = getAccessorData(accessor, bufferViews);
             var bufferView = bufferViews[accessor.bufferView];
@@ -474,14 +492,18 @@ var createVertexBuffer = function (device, attributes, indices, accessors, buffe
                 normalize: accessor.normalized
             };
         }
+
+        // generate normals if they're missing (this should probably be a user option)
+        if (!sourceDesc.hasOwnProperty(SEMANTIC_NORMAL)) {
+            generateNormals(sourceDesc, indices);
+        }
+
+        // create and store it in the dictionary
+        vb = createVertexBufferInternal(device, sourceDesc, disableFlipV);
+        vertexBufferDict[vbKey] = vb;
     }
 
-    // generate normals if they're missing (this should probably be a user option)
-    if (!sourceDesc.hasOwnProperty(SEMANTIC_NORMAL)) {
-        generateNormals(sourceDesc, indices);
-    }
-
-    return createVertexBufferInternal(device, sourceDesc, disableFlipV);
+    return vb;
 };
 
 var createVertexBufferDraco = function (device, outputGeometry, extDraco, decoder, decoderModule, indices, disableFlipV) {
@@ -613,7 +635,7 @@ var createSkin = function (device, gltfSkin, accessors, bufferViews, nodes) {
 var tempMat = new Mat4();
 var tempVec = new Vec3();
 
-var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callback, disableFlipV, meshByPrimitiveHash) {
+var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callback, disableFlipV, meshByPrimitiveHash, vertexBufferDict) {
     var meshGroup = [];
 
     gltfMesh.primitives.forEach(function (primitive) {
@@ -716,7 +738,7 @@ var createMeshGroup = function (device, gltfMesh, accessors, bufferViews, callba
         // if mesh was not constructed from draco data, use uncompressed
         if (!vertexBuffer) {
             indices = primitive.hasOwnProperty('indices') ? getAccessorData(accessors[primitive.indices], bufferViews) : null;
-            vertexBuffer = createVertexBuffer(device, primitive.attributes, indices, accessors, bufferViews, disableFlipV);
+            vertexBuffer = createVertexBuffer(device, primitive.attributes, indices, accessors, bufferViews, disableFlipV, vertexBufferDict);
             primitiveType = getPrimitiveType(primitive);
         }
 
@@ -1546,10 +1568,13 @@ var createMeshGroups = function (device, gltf, bufferViews, callback, disableFli
         return [];
     }
 
+    // dictionary of vertex buffers to avoid duplicates
+    var vertexBufferDict = {};
+
     var meshByPrimitiveHash = {};
 
     return gltf.meshes.map(function (gltfMesh) {
-        return createMeshGroup(device, gltfMesh, gltf.accessors, bufferViews, callback, disableFlipV, meshByPrimitiveHash);
+        return createMeshGroup(device, gltfMesh, gltf.accessors, bufferViews, callback, disableFlipV, meshByPrimitiveHash, vertexBufferDict);
     });
 };
 

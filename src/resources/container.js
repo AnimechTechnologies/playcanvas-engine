@@ -13,17 +13,17 @@ import { GlbParser } from './parser/glb-parser.js';
  * cameras and lights. Entities in scene hierarchies will have model, camera and light components attached to them.
  * Animation components have to be added manually (using animationIndicesByNode) as either pc.AnimComponent or pc.AnimationComponent.
  * @param {object} data - The loaded GLB data.
- * @property {pc.Entity|null} scene Root entity of the default GLB scene.
- * @property {pc.Entity[]} scenes Root entities of scenes indexed by GLB scenes.
- * @property {pc.CameraComponent[]} cameras Instanced camera components, does not match index of GLB cameras.
- * @property {pc.LightComponent[]} lights Instanced light components, does not match index of GLB lights.
- * @property {pc.Entity[]} nodes Entities indexed by GLB nodes.
- * @property {pc.Asset[]} materials Material assets indexed by GLB materials.
- * @property {pc.Asset[]} textures Texture assets indexed by GLB textures.
- * @property {pc.Asset[]} animations Animation assets indexed by GLB animations.
- * @property {number[][]} animationIndicesByNode Animation asset indices indexed by GLB nodes.
- * @property {pc.Asset[]} models Model assets indexed by GLB meshes.
- * @property {pc.AssetRegistry} registry The asset registry.
+ * @property {pc.Entity|null} scene - Root entity of the default GLB scene.
+ * @property {pc.Entity[]} scenes - Root entities of scenes indexed by GLB scenes.
+ * @property {pc.CameraComponent[]} cameras - Instanced camera components, does not match index of GLB cameras.
+ * @property {pc.LightComponent[]} lights - Instanced light components, does not match index of GLB lights.
+ * @property {pc.Entity[]} nodes - Entities indexed by GLB nodes.
+ * @property {number[][]} animationIndicesByNode - Animation asset indices indexed by GLB nodes.
+ * @property {pc.Asset[]} animations - Array of assets of animations in the GLB container.
+ * @property {pc.Asset[]} textures - Array of assets of textures in the GLB container.
+ * @property {pc.Asset[]} materials - Array of assets of materials in the GLB container.
+ * @property {pc.Asset[]} models - Model assets indexed by GLB meshes.
+ * @property {pc.AssetRegistry} registry - The asset registry.
  */
 function ContainerResource(data) {
     this.data = data;
