@@ -997,6 +997,7 @@ var createMaterial = function (gltfMaterial, textures, disableFlipV) {
     };
 
     var material = new StandardMaterial();
+    material.opacityFadesSpecular = false;
 
     // glTF dooesn't define how to occlude specular
     material.occludeSpecular = true;
