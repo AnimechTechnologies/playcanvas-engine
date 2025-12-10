@@ -1,6 +1,6 @@
 {
-  "name": "playcanvas",
-  "version": "1.77.0",
+  "name": "@animech-public/playcanvas",
+  "version": "1.77.0-animech",
   "author": "PlayCanvas <support@playcanvas.com>",
   "homepage": "https://playcanvas.com",
   "description": "PlayCanvas WebGL game engine",
