@@ -113,7 +113,10 @@ import particleInputRgba8PS from './particle/frag/particleInputRgba8.js';
 import particleOutputFloatPS from './particle/frag/particleOutputFloat.js';
 import particleOutputRgba8PS from './particle/frag/particleOutputRgba8.js';
 import particleUpdaterAABBPS from './particle/frag/particleUpdaterAABB.js';
+import particleUpdaterConePS from './particle/frag/particleUpdaterCone.js';
+import particleUpdaterCylinderPS from './particle/frag/particleUpdaterCylinder.js';
 import particleUpdaterEndPS from './particle/frag/particleUpdaterEnd.js';
+import particleUpdaterHemispherePS from './particle/frag/particleUpdaterHemisphere.js';
 import particleUpdaterInitPS from './particle/frag/particleUpdaterInit.js';
 import particleUpdaterNoRespawnPS from './particle/frag/particleUpdaterNoRespawn.js';
 import particleUpdaterOnStopPS from './particle/frag/particleUpdaterOnStop.js';
@@ -328,7 +331,10 @@ const shaderChunks = {
     particleOutputFloatPS,
     particleOutputRgba8PS,
     particleUpdaterAABBPS,
+    particleUpdaterCylinderPS,
+    particleUpdaterConePS,
     particleUpdaterEndPS,
+    particleUpdaterHemispherePS,
     particleUpdaterInitPS,
     particleUpdaterNoRespawnPS,
     particleUpdaterOnStopPS,

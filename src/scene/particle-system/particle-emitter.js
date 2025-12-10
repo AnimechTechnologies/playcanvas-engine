@@ -29,7 +29,7 @@ import { ShaderProcessorOptions } from '../../platform/graphics/shader-processor
 
 import {
     BLEND_NORMAL,
-    EMITTERSHAPE_BOX,
+    EMITTERSHAPE_BOX, EMITTERSHAPE_CONE, EMITTERSHAPE_CYLINDER, EMITTERSHAPE_HEMISPHERE, EMITTERSHAPE_SPHERE,
     PARTICLEMODE_GPU,
     PARTICLEORIENTATION_SCREEN, PARTICLEORIENTATION_WORLD,
     PARTICLESORT_NONE,
@@ -244,6 +244,8 @@ class ParticleEmitter {
         setProperty('emitterExtentsInner', new Vec3(0, 0, 0));   // Volume inside emitterExtents to exclude from regeneration
         setProperty('emitterRadius', 0);
         setProperty('emitterRadiusInner', 0);                       // Same as ExtentsInner but for spherical volume
+        setProperty('emitterLength', 0);
+        setProperty('emitterLengthInner', 0);                       // Same as ExtentsInner but for spherical volume
         setProperty('emitterShape', EMITTERSHAPE_BOX);
         setProperty('initialVelocity', 1);
         setProperty('wrap', false);
@@ -427,8 +429,16 @@ class ParticleEmitter {
             let recalculateLocalBounds = false;
             if (this.emitterShape === EMITTERSHAPE_BOX) {
                 recalculateLocalBounds = !this.emitterExtents.equals(this.prevEmitterExtents);
-            } else {
+            } else if (this.emitterShape === EMITTERSHAPE_SPHERE) {
                 recalculateLocalBounds = !(this.emitterRadius === this.prevEmitterRadius);
+            } else if (this.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+                recalculateLocalBounds = !(this.emitterRadius === this.prevEmitterRadius);
+            } else if (this.emitterShape === EMITTERSHAPE_CYLINDER) {
+                recalculateLocalBounds = !(this.emitterRadius === this.prevEmitterRadius) || !(this.emitterLength === this.prevEmitterLength);
+            } else if (this.emitterShape === EMITTERSHAPE_CONE) {
+                recalculateLocalBounds = !(this.emitterRadius === this.prevEmitterRadius) || !(this.emitterLength === this.prevEmitterLength);
+            } else {
+                console.warn(`ParticleEmitter: Unknown emitter shape ${this.emitterShape}`);
             }
             if (recalculateLocalBounds) {
                 this.calculateLocalBounds();
@@ -542,10 +552,25 @@ class ParticleEmitter {
             x = this.emitterExtents.x * 0.5;
             y = this.emitterExtents.y * 0.5;
             z = this.emitterExtents.z * 0.5;
-        } else {
+        } else if (this.emitterShape === EMITTERSHAPE_SPHERE) {
             x = this.emitterRadius;
             y = this.emitterRadius;
             z = this.emitterRadius;
+        } else if (this.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+            x = this.emitterRadius;
+            y = this.emitterRadius;
+            z = this.emitterRadius;
+            maxz = -z; // hemisphere is only in +Z direction
+        } else if (this.emitterShape === EMITTERSHAPE_CYLINDER) {
+            x = this.emitterRadius;
+            y = this.emitterRadius;
+            z = this.emitterLength * 0.5;
+        } else if (this.emitterShape === EMITTERSHAPE_CONE) {
+            x = this.emitterRadius;
+            y = this.emitterRadius;
+            z = this.emitterLength * 0.5;
+        } else {
+            console.warn(`ParticleEmitter: Unknown emitter shape ${this.emitterShape}`);
         }
 
         const w = Math.max(accumW[0], accumW[1]);
@@ -562,8 +587,6 @@ class ParticleEmitter {
         const gd = this.graphicsDevice;
 
         if (this.colorMap === null) this.colorMap = this.defaultParamTexture;
-
-        this.spawnBounds = this.emitterShape === EMITTERSHAPE_BOX ? this.emitterExtents : this.emitterRadius;
 
         this.useCpu = this.useCpu || this.sort > PARTICLESORT_NONE ||  // force CPU if desirable by user or sorting is enabled
         gd.maxVertexTextures <= 1 || // force CPU if can't use enough vertex textures
@@ -617,13 +640,35 @@ class ParticleEmitter {
         const emitterPos = (this.node === null || this.localSpace) ? Vec3.ZERO : this.node.getPosition();
         if (this.emitterShape === EMITTERSHAPE_BOX) {
             if (this.node === null || this.localSpace) {
-                spawnMatrix.setTRS(Vec3.ZERO, Quat.IDENTITY, this.spawnBounds);
+                spawnMatrix.setTRS(Vec3.ZERO, Quat.IDENTITY, this.emitterExtents);
             } else {
-                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), tmpVec3.copy(this.spawnBounds).mul(this.node.localScale));
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), tmpVec3.copy(this.emitterExtents).mul(this.node.localScale));
             }
             extentsInnerRatioUniform[0] = this.emitterExtents.x !== 0 ? this.emitterExtentsInner.x / this.emitterExtents.x : 0;
             extentsInnerRatioUniform[1] = this.emitterExtents.y !== 0 ? this.emitterExtentsInner.y / this.emitterExtents.y : 0;
             extentsInnerRatioUniform[2] = this.emitterExtents.z !== 0 ? this.emitterExtentsInner.z / this.emitterExtents.z : 0;
+        } else if (this.emitterShape === EMITTERSHAPE_SPHERE) {
+            // nothing to do
+        } else if (this.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+            if (this.node === null || this.localSpace) {
+                spawnMatrix.setIdentity();
+            } else {
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), this.node.localScale);
+            }
+        } else if (this.emitterShape === EMITTERSHAPE_CYLINDER) {
+            if (this.node === null || this.localSpace) {
+                spawnMatrix.setIdentity();
+            } else {
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), this.node.localScale);
+            }
+        } else if (this.emitterShape === EMITTERSHAPE_CONE) {
+            if (this.node === null || this.localSpace) {
+                spawnMatrix.setIdentity();
+            } else {
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), this.node.localScale);
+            }
+        } else {
+            console.warn(`ParticleEmitter: Unknown emitter shape ${this.emitterShape}`);
         }
         for (let i = 0; i < this.numParticles; i++) {
             this._cpuUpdater.calcSpawnPosition(this.particleTex, spawnMatrix, extentsInnerRatioUniform, emitterPos, i);
@@ -657,11 +702,24 @@ class ParticleEmitter {
             this.swapTex = false;
         }
 
+        let shaderCodeUpdaterShape = '';
+        if (this.emitterShape === EMITTERSHAPE_BOX) {
+            shaderCodeUpdaterShape = shaderChunks.particleUpdaterAABBPS;
+        } else if (this.emitterShape === EMITTERSHAPE_SPHERE) {
+            shaderCodeUpdaterShape = shaderChunks.particleUpdaterSpherePS;
+        } else if (this.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+            shaderCodeUpdaterShape = shaderChunks.particleUpdaterHemispherePS;
+        } else if (this.emitterShape === EMITTERSHAPE_CYLINDER) {
+            shaderCodeUpdaterShape = shaderChunks.particleUpdaterCylinderPS;
+        } else if (this.emitterShape === EMITTERSHAPE_CONE) {
+            shaderCodeUpdaterShape = shaderChunks.particleUpdaterConePS;
+        } else {
+            console.warn(`ParticleEmitter: Unknown emitter shape ${this.emitterShape}`);
+        }
+
         const shaderCodeStart = (this.localSpace ? '#define LOCAL_SPACE\n' : '') + shaderChunks.particleUpdaterInitPS +
         (this.pack8 ? (shaderChunks.particleInputRgba8PS + shaderChunks.particleOutputRgba8PS) :
-            (shaderChunks.particleInputFloatPS + shaderChunks.particleOutputFloatPS)) +
-        (this.emitterShape === EMITTERSHAPE_BOX ? shaderChunks.particleUpdaterAABBPS : shaderChunks.particleUpdaterSpherePS) +
-        shaderChunks.particleUpdaterStartPS;
+            (shaderChunks.particleInputFloatPS + shaderChunks.particleOutputFloatPS)) + shaderCodeUpdaterShape + shaderChunks.particleUpdaterStartPS;
         const shaderCodeRespawn = shaderCodeStart + shaderChunks.particleUpdaterRespawnPS + shaderChunks.particleUpdaterEndPS;
         const shaderCodeNoRespawn = shaderCodeStart + shaderChunks.particleUpdaterNoRespawnPS + shaderChunks.particleUpdaterEndPS;
         const shaderCodeOnStop = shaderCodeStart + shaderChunks.particleUpdaterOnStopPS + shaderChunks.particleUpdaterEndPS;
@@ -1171,6 +1229,28 @@ class ParticleEmitter {
             } else {
                 spawnMatrix.setTRS(Vec3.ZERO, this.meshInstance.node.getRotation(), tmpVec3.copy(this.emitterExtents).mul(this.meshInstance.node.localScale));
             }
+        } else if (this.emitterShape === EMITTERSHAPE_SPHERE) {
+            // nothing to do
+        } else if (this.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+            if (this.node === null || this.localSpace) {
+                spawnMatrix.setIdentity();
+            } else {
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), this.node.localScale);
+            }
+        } else if (this.emitterShape === EMITTERSHAPE_CYLINDER) {
+            if (this.node === null || this.localSpace) {
+                spawnMatrix.setIdentity();
+            } else {
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), this.node.localScale);
+            }
+        } else if (this.emitterShape === EMITTERSHAPE_CONE) {
+            if (this.node === null || this.localSpace) {
+                spawnMatrix.setIdentity();
+            } else {
+                spawnMatrix.setTRS(Vec3.ZERO, this.node.getRotation(), this.node.localScale);
+            }
+        } else {
+            console.warn(`ParticleEmitter: Unknown emitter shape ${this.emitterShape}`);
         }
 
         let emitterPos;

@@ -10,8 +10,10 @@ import { Component } from '../component.js';
 const SIMPLE_PROPERTIES = [
     'emitterExtents',
     'emitterRadius',
+    'emitterLength',
     'emitterExtentsInner',
     'emitterRadiusInner',
+    'emitterLengthInner',
     'loop',
     'initialVelocity',
     'animSpeed',
@@ -670,6 +672,44 @@ class ParticleSystemComponent extends Component {
      */
     get emitterRadiusInner() {
         return this.data.emitterRadiusInner;
+    }
+
+    /**
+     * Sets the radius within which particles are spawned at random positions. This only applies to
+     * particle system with the shape `EMITTERSHAPE_SPHERE`.
+     *
+     * @type {number}
+     */
+    set emitterLength(arg) {
+        this._setValue('emitterLength', arg);
+    }
+
+    /**
+     * Gets the radius within which particles are spawned at random positions.
+     *
+     * @type {number}
+     */
+    get emitterLength() {
+        return this.data.emitterLength;
+    }
+
+    /**
+     * Sets the inner radius within which particles are not spawned. This only applies to particle
+     * system with the shape `EMITTERSHAPE_SPHERE`.
+     *
+     * @type {number}
+     */
+    set emitterLengthInner(arg) {
+        this._setValue('emitterLengthInner', arg);
+    }
+
+    /**
+     * Gets the inner radius within which particles are not spawned.
+     *
+     * @type {number}
+     */
+    get emitterLengthInner() {
+        return this.data.emitterLengthInner;
     }
 
     /**
@@ -1895,6 +1935,8 @@ class ParticleSystemComponent extends Component {
                 emitterExtentsInner: data.emitterExtentsInner,
                 emitterRadius: data.emitterRadius,
                 emitterRadiusInner: data.emitterRadiusInner,
+                emitterLength: data.emitterLength,
+                emitterLengthInner: data.emitterLengthInner,
                 emitterShape: data.emitterShape,
                 initialVelocity: data.initialVelocity,
                 wrap: data.wrap,

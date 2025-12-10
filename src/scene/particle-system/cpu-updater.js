@@ -2,7 +2,7 @@ import { math } from '../../core/math/math.js';
 import { Mat4 } from '../../core/math/mat4.js';
 import { Vec3 } from '../../core/math/vec3.js';
 
-import { EMITTERSHAPE_BOX, EMITTERSHAPE_SPHERE, PARTICLESORT_NONE } from '../constants.js';
+import { EMITTERSHAPE_BOX, EMITTERSHAPE_CONE, EMITTERSHAPE_CYLINDER, EMITTERSHAPE_HEMISPHERE, EMITTERSHAPE_SPHERE, PARTICLESORT_NONE } from '../constants.js';
 
 let nonUniformScale;
 let uniformScale = 1;
@@ -101,7 +101,7 @@ class ParticleCPUUpdater {
             } else {
                 randomPosTformed.copy(spawnMatrix.transformPoint(randomPos));
             }
-        } else {
+        } else if (emitter.emitterShape === EMITTERSHAPE_SPHERE) {
             randomPos.normalize();
             const spawnBoundsSphereInnerRatio = (emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius;
             const r = rW * (1.0 - spawnBoundsSphereInnerRatio) + spawnBoundsSphereInnerRatio;
@@ -110,6 +110,46 @@ class ParticleCPUUpdater {
             } else {
                 randomPosTformed.copy(randomPos.mulScalar(r * emitter.emitterRadius));
             }
+        } else if (emitter.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+            randomPos.z = Math.abs(randomPos.z);
+            randomPos.normalize();
+            const spawnBoundsSphereInnerRatio = (emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius;
+            const r = rW * (1.0 - spawnBoundsSphereInnerRatio) + spawnBoundsSphereInnerRatio;
+            if (!emitter.localSpace) {
+                randomPosTformed.copy(emitterPos).add(spawnMatrix.transformPoint(randomPos.mulScalar(r * emitter.emitterRadius)));
+            } else {
+                randomPosTformed.copy(randomPos.mulScalar(spawnMatrix.transformPoint(r * emitter.emitterRadius)));
+            }
+        } else if (emitter.emitterShape === EMITTERSHAPE_CYLINDER) {
+            randomPos.z = 0;
+            randomPos.normalize();
+            const spawnBoundsSphereInnerRatio = (emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius;
+            const r = rW * (1.0 - spawnBoundsSphereInnerRatio) + spawnBoundsSphereInnerRatio;
+            const spawnBoundsLengthInnerRatio = (emitter.emitterLength === 0) ? 0 : emitter.emitterLengthInner / emitter.emitterLength;
+            const l = rZ * (1.0 - spawnBoundsLengthInnerRatio) + spawnBoundsLengthInnerRatio;
+            randomPos.mulScalar(r * emitter.emitterRadius);
+            randomPos.z = (l - 0.5) * emitter.emitterLength;
+            if (!emitter.localSpace) {
+                randomPosTformed.copy(emitterPos).add(spawnMatrix.transformPoint(randomPos));
+            } else {
+                randomPosTformed.copy(randomPos.mulScalar(spawnMatrix.transformPoint(randomPos)));
+            }
+        } else if (emitter.emitterShape === EMITTERSHAPE_CONE) {
+            randomPos.z = 0;
+            randomPos.normalize();
+            const spawnBoundsSphereInnerRatio = (emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius;
+            const r = rW * (1.0 - spawnBoundsSphereInnerRatio) + spawnBoundsSphereInnerRatio;
+            const spawnBoundsLengthInnerRatio = (emitter.emitterLength === 0) ? 0 : emitter.emitterLengthInner / emitter.emitterLength;
+            const l = rZ * (1.0 - spawnBoundsLengthInnerRatio) + spawnBoundsLengthInnerRatio;
+            randomPos.mulScalar(r * l * emitter.emitterRadius);
+            randomPos.z = (l - 0.5) * emitter.emitterLength;
+            if (!emitter.localSpace) {
+                randomPosTformed.copy(emitterPos).add(spawnMatrix.transformPoint(randomPos));
+            } else {
+                randomPosTformed.copy(randomPos.mulScalar(spawnMatrix.transformPoint(randomPos)));
+            }
+        } else {
+            console.warn(`ParticleCPUUpdater: Unknown emitter shape ${this.emitterShape}`);
         }
 
         const particleRate = math.lerp(emitter.rate, emitter.rate2, rX);
@@ -319,11 +359,19 @@ class ParticleCPUUpdater {
                 localVelocityVec.z += (localVelocityVec2.z - localVelocityVec.z) * rndFactor3Vec.z;
 
                 if (emitter.initialVelocity > 0) {
-                    if (emitter.emitterShape === EMITTERSHAPE_SPHERE) {
+                    if (emitter.emitterShape === EMITTERSHAPE_BOX) {
+                        localVelocityVec.add(Vec3.FORWARD.mulScalar(emitter.initialVelocity));
+                    } else if (emitter.emitterShape === EMITTERSHAPE_SPHERE) {
+                        randomPos.copy(rndFactor3Vec).mulScalar(2).sub(Vec3.ONE).normalize();
+                        localVelocityVec.add(randomPos.mulScalar(emitter.initialVelocity));
+                    } else if (emitter.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+                        randomPos.copy(rndFactor3Vec).mulScalar(2).sub(Vec3.ONE).normalize();
+                        localVelocityVec.add(randomPos.mulScalar(emitter.initialVelocity));
+                    } else if (emitter.emitterShape === EMITTERSHAPE_CONE) {
                         randomPos.copy(rndFactor3Vec).mulScalar(2).sub(Vec3.ONE).normalize();
                         localVelocityVec.add(randomPos.mulScalar(emitter.initialVelocity));
                     } else {
-                        localVelocityVec.add(Vec3.FORWARD.mulScalar(emitter.initialVelocity));
+                        console.warn(`ParticleCPUUpdater: Unknown emitter shape ${this.emitterShape}`);
                     }
                 }
 

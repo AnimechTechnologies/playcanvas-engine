@@ -35,6 +35,8 @@ const _schema = [
     'emitterExtentsInner',
     'emitterRadius',
     'emitterRadiusInner',
+    'emitterLength',
+    'emitterLengthInner',
     'initialVelocity',
     'wrap',
     'wrapBounds',

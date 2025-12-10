@@ -418,6 +418,30 @@ export const EMITTERSHAPE_BOX = 0;
 export const EMITTERSHAPE_SPHERE = 1;
 
 /**
+ * Hemisphere shape parameterized by emitterRadius.
+ *
+ * @type {number}
+ * @category Graphics
+ */
+export const EMITTERSHAPE_HEMISPHERE = 2;
+
+/**
+ * Cylinder shape parameterized by emitterRadius.
+ *
+ * @type {number}
+ * @category Graphics
+ */
+export const EMITTERSHAPE_CYLINDER = 3;
+
+/**
+ * Cone shape parameterized by emitterRadius and emitterLength.
+ *
+ * @type {number}
+ * @category Graphics
+ */
+export const EMITTERSHAPE_CONE = 4;
+
+/**
  * Particles are facing camera.
  *
  * @type {number}

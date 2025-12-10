@@ -10,7 +10,7 @@ import { DepthState } from '../../platform/graphics/depth-state.js';
 
 import { drawQuadWithShader } from '../graphics/quad-render-utils.js';
 
-import { EMITTERSHAPE_BOX } from '../constants.js';
+import { EMITTERSHAPE_BOX, EMITTERSHAPE_CONE, EMITTERSHAPE_CYLINDER, EMITTERSHAPE_HEMISPHERE, EMITTERSHAPE_SPHERE } from '../constants.js';
 
 const spawnMatrix3 = new Mat3();
 const emitterMatrix3 = new Mat3();
@@ -37,6 +37,8 @@ class ParticleGPUUpdater {
         this.constantSpawnPosInnerRatio = gd.scope.resolve('spawnPosInnerRatio');
         this.constantSpawnBoundsSphere = gd.scope.resolve('spawnBoundsSphere');
         this.constantSpawnBoundsSphereInnerRatio = gd.scope.resolve('spawnBoundsSphereInnerRatio');
+        this.constantSpawnBoundsLength = gd.scope.resolve('spawnBoundsLength');
+        this.constantSpawnBoundsLengthInnerRatio = gd.scope.resolve('spawnBoundsLengthInnerRatio');
         this.constantInitialVelocity = gd.scope.resolve('initialVelocity');
         this.constantFrameRandom = gd.scope.resolve('frameRandom');
         this.constantDelta = gd.scope.resolve('delta');
@@ -133,9 +135,30 @@ class ParticleGPUUpdater {
             spawnMatrix3.setFromMat4(spawnMatrix);
             this.constantSpawnBounds.setValue(spawnMatrix3.data);
             this.constantSpawnPosInnerRatio.setValue(extentsInnerRatioUniform);
-        } else {
+        } else if (emitter.emitterShape === EMITTERSHAPE_SPHERE) {
             this.constantSpawnBoundsSphere.setValue(emitter.emitterRadius);
             this.constantSpawnBoundsSphereInnerRatio.setValue((emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius);
+        } else if (emitter.emitterShape === EMITTERSHAPE_HEMISPHERE) {
+            spawnMatrix3.setFromMat4(spawnMatrix);
+            this.constantSpawnBounds.setValue(spawnMatrix3.data);
+            this.constantSpawnBoundsSphere.setValue(emitter.emitterRadius);
+            this.constantSpawnBoundsSphereInnerRatio.setValue((emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius);
+        } else if (emitter.emitterShape === EMITTERSHAPE_CYLINDER) {
+            spawnMatrix3.setFromMat4(spawnMatrix);
+            this.constantSpawnBounds.setValue(spawnMatrix3.data);
+            this.constantSpawnBoundsSphere.setValue(emitter.emitterRadius);
+            this.constantSpawnBoundsSphereInnerRatio.setValue((emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius);
+            this.constantSpawnBoundsLength.setValue(emitter.emitterLength);
+            this.constantSpawnBoundsLengthInnerRatio.setValue((emitter.emitterLength === 0) ? 0 : emitter.emitterLengthInner / emitter.emitterLength);
+        } else if (emitter.emitterShape === EMITTERSHAPE_CONE) {
+            spawnMatrix3.setFromMat4(spawnMatrix);
+            this.constantSpawnBounds.setValue(spawnMatrix3.data);
+            this.constantSpawnBoundsSphere.setValue(emitter.emitterRadius);
+            this.constantSpawnBoundsSphereInnerRatio.setValue((emitter.emitterRadius === 0) ? 0 : emitter.emitterRadiusInner / emitter.emitterRadius);
+            this.constantSpawnBoundsLength.setValue(emitter.emitterLength);
+            this.constantSpawnBoundsLengthInnerRatio.setValue((emitter.emitterLength === 0) ? 0 : emitter.emitterLengthInner / emitter.emitterLength);
+        } else {
+            console.warn(`ParticleGPUUpdater: Unknown emitter shape ${emitter.emitterShape}`);
         }
         this.constantInitialVelocity.setValue(emitter.initialVelocity);
 
